@@ -22,6 +22,7 @@ static Background background;
 static Toad toad;
 static ToadText toadText;
 static Goomba goomba;
+static Button button;
 static Block block;
 
 static C2D_SpriteSheet mario_spriteSheet;
@@ -30,12 +31,14 @@ static C2D_SpriteSheet block_spriteSheet;
 static C2D_SpriteSheet toad_spriteSheet;
 static C2D_SpriteSheet toadText_spriteSheet;
 static C2D_SpriteSheet goomba_spriteSheet;
+static C2D_SpriteSheet button_spriteSheet;
 
 Mario *mario_pointer = &mario;
 Toad *toad_pointer = &toad;
 ToadText *toadText_pointer = &toadText;
 Goomba *goomba_pointer = &goomba;
 Block *block_pointer = &block;
+Button *button_pointer = &button;
 
 int sprite_id = RIGHT_WALK_1;
 u64 start_loop_time = svcGetSystemTick();
@@ -46,7 +49,8 @@ static u64 max_jump = 65000000;
 u64 jump_start;
 bool can_jump = true;
 
-static CWAV* cwav = (CWAV*) malloc(sizeof(CWAV));
+static CWAV* ost = (CWAV*) malloc(sizeof(CWAV));
+static CWAV* toadSound = (CWAV*) malloc(sizeof(CWAV));
 
 bool array_contains(int val, int array[], int* pos) {
     //printf("SIZE OF ARRAY IS %d\n", sizeof(array) / sizeof(array[0]));
@@ -78,6 +82,14 @@ void controllerSprites_Toad()
     C2D_SpriteSetCenter(&toad_pointer->sprite, 0.f, 0.f);
 	C2D_SpriteSetPos(&toad_pointer->sprite, TOAD_INITIAL_POS_X, TOAD_INITIAL_POS_Y);
 	C2D_SpriteSetRotationDegrees(&toad_pointer->sprite, 0); 
+}
+
+void controllerSprites_Button()
+{
+	C2D_SpriteFromSheet(&button_pointer->sprite, button_spriteSheet, 0);
+    C2D_SpriteSetCenter(&button_pointer->sprite, 0.f, 0.f);
+	C2D_SpriteSetPos(&button_pointer->sprite, TOAD_INITIAL_POS_X - 3, TOAD_INITIAL_POS_Y - 30);
+	C2D_SpriteSetRotationDegrees(&button_pointer->sprite, 0); 
 }
 
 void controllerSprites_Goomba()
@@ -161,6 +173,12 @@ void marioPhysics() {
     controllerSprites_mario(sprite_id);
 }
 
+bool isInDialogPos() {
+   return mario_pointer->dx >= TOAD_INITIAL_POS_X - 40 
+    && mario_pointer->dx <= TOAD_INITIAL_POS_X + 40
+    && mario_pointer->dy >= TOAD_INITIAL_POS_Y - 30;
+}
+
 void moveMario(u32 kHeld)
 {
 	int pos;
@@ -171,26 +189,27 @@ void moveMario(u32 kHeld)
     float speed;
 
 
-    if ((kHeld & KEY_A) && can_jump) {
-        if (mario_pointer->state == MarioState::walking) {
-            jump_start = svcGetSystemTick();
-            mario_pointer->state = MarioState::jumping;
-            new_y -= mario_pointer->jump_speed;
+        if ((kHeld & KEY_A) && can_jump) {
+            if (mario_pointer->state == MarioState::walking) {
+                if (!isInDialogPos()) {
+                    jump_start = svcGetSystemTick();
+                    mario_pointer->state = MarioState::jumping;
+                    new_y -= mario_pointer->jump_speed;
 
-            if (array_contains(sprite_id, rightWalk, &pos)) {
-                printf("CONTAINS %d in POS %d JUMP RIGHT\n", sprite_id, pos);
-                sprite_id = JUMP_RIGHT;
-            } else {
-                printf("CONTAINS %d in POS %d JUMP LEFT\n", sprite_id, pos);
-                sprite_id = JUMP_LEFT;
+                    if (array_contains(sprite_id, rightWalk, &pos)) {
+                        printf("CONTAINS %d in POS %d JUMP RIGHT\n", sprite_id, pos);
+                        sprite_id = JUMP_RIGHT;
+                    } else {
+                        printf("CONTAINS %d in POS %d JUMP LEFT\n", sprite_id, pos);
+                        sprite_id = JUMP_LEFT;
+                    }
+                }  
+            } else if (mario_pointer->state == MarioState::jumping) {
+                if (kHeld & KEY_A) { 
+                    new_y -= mario_pointer->jump_speed;
+                }
             }
-
-        } else if (mario_pointer->state == MarioState::jumping) {
-             if (kHeld & KEY_A) { 
-                new_y -= mario_pointer->jump_speed;
-            }
-        }
-    } 
+        } 
 
 
     if (mario_pointer->state == walking) {
@@ -288,9 +307,13 @@ void prepare_sprites() {
         svcBreak(USERBREAK_PANIC);
     }
 
-    //Dialogs
+    //Prompts 
     toadText_spriteSheet = C2D_SpriteSheetLoad("romfs:/gfx/toadtext.t3x");
     if (!toadText_spriteSheet) {
+        svcBreak(USERBREAK_PANIC);
+    }
+    button_spriteSheet = C2D_SpriteSheetLoad("romfs:/gfx/button.t3x");
+    if (!button_spriteSheet) {
         svcBreak(USERBREAK_PANIC);
     }
 
@@ -368,6 +391,12 @@ void prepare_toad() {
     C2D_SpriteSetRotation(&toadText_pointer->sprite, C3D_Angle(0));
     toadText_pointer->visible = false;
     toadText_pointer->current_text = 0;
+
+    C2D_SpriteFromSheet(&button_pointer->sprite, button_spriteSheet, 0);
+    C2D_SpriteSetCenter(&button_pointer->sprite, 0.f, 0.f);
+    C2D_SpriteSetPos(&button_pointer->sprite, TOAD_INITIAL_POS_X - 3, TOAD_INITIAL_POS_Y - 30);
+    C2D_SpriteSetRotation(&button_pointer->sprite, C3D_Angle(0));
+    button_pointer->visible = false;
 }
 
 void draw_mario() {
@@ -380,6 +409,8 @@ void draw_characters() {
     C2D_DrawSprite(&toad.sprite);
     if (toadText_pointer->visible) {
         C2D_DrawSprite(&toadText.sprite);
+    } else if (button_pointer->visible) {
+        C2D_DrawSprite(&button.sprite);
     }
     if (goomba_pointer->alive) {
         C2D_DrawSprite(&goomba.sprite);
@@ -418,17 +449,43 @@ void drawerTopScreenController() {
     draw_mario();
 }
 
+void manageKeyPress(u32 kDown) {
+    if ((kDown & KEY_A) && isInDialogPos()){
+        if (toadText_pointer->visible) {
+            toadText_pointer->visible = false;
+        } else {
+            toadText_pointer->visible = true;
+            cwavPlay(toadSound, 0, -1);
+        }
+    }
+
+}
+
 void gameInputController(u32 kDown, u32 kHeld, u32 kUp)
 {
-    //if (kDown) {
-        //manageKeyPress(kDown);
-    //}
+    if (kDown) {
+        manageKeyPress(kDown);
+    }
     if (kUp) {
         setIdleMario(kUp);
     } else if (kHeld) {
 	    moveMario(kHeld);
     }
 }
+
+void handleToadCollision() {
+    if (isInDialogPos()) {
+        button_pointer->visible = true;
+    } else {
+        button_pointer->visible = false;
+        toadText_pointer->visible = false;
+    }
+}
+
+
+void handleCollisions() {
+    handleToadCollision();
+} 
 
 /****************************
  ***********DEBUG************
@@ -460,11 +517,8 @@ void printDebugData(u32 kDown, u32 kHeld) {
     printf("]\n"); */
 }
 
-/****************************
- **********SOUND*************
- ***************************/
-void prepareOst() {
-    FILE* file = fopen("romfs:/ostd.cwav", "rb");
+void prepareSound(char* soundPath, CWAV* cwav) {
+    FILE* file = fopen(soundPath, "rb");
     if (!file) {
         cwavFree(cwav);
         free(cwav);
@@ -475,11 +529,9 @@ void prepareOst() {
     void* buffer = linearAlloc(fileSize);
     if (!buffer) // This should never happen (unless we load a file too big to fit)
         svcBreak(USERBREAK_PANIC);
-
     fseek(file, 0, SEEK_SET); 
     fread(buffer, 1, fileSize, file);
     fclose(file);
-
     cwavLoad(cwav, buffer, 1);
     cwav->dataBuffer = buffer; 
     if (cwav->loadStatus != CWAV_SUCCESS) {
@@ -489,9 +541,20 @@ void prepareOst() {
         free(cwav);
     }
 
-    cwav->volume = 0.5;
-    cwav->isLooped = true;
-    cwavPlay(cwav, 0, -1);
+
+}
+
+/****************************
+ **********SOUND*************
+ ***************************/
+void prepareSounds() {
+    prepareSound("romfs:/ostd.cwav", ost);
+    ost->volume = 0.4;
+    cwavPlay(ost, 0, -1);
+
+    prepareSound("romfs:/toad.cwav", toadSound);
+    toadSound->volume = 1;
+    //cwavPlay(ost, 0, -1);
 }
 
 int main(int argc, char *argv[]) {
@@ -508,7 +571,7 @@ int main(int argc, char *argv[]) {
     cwavUseEnvironment(CWAV_ENV_DSP);
     ndspInit();
 
-    prepareOst();
+    prepareSounds();
 
     C3D_RenderTarget *top_screen = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
 
@@ -521,8 +584,8 @@ int main(int argc, char *argv[]) {
     while(aptMainLoop()) {
         //last_time = svcGetSystemTick ();
         /* Do your game loop here and swap buffers */
-        if (!cwavIsPlaying(cwav)) {
-            cwavPlay(cwav, 0 , -1);
+        if (!cwavIsPlaying(ost)) {
+            cwavPlay(ost, 0 , -1);
         }
 
         start_loop_time = svcGetSystemTick();       
@@ -536,6 +599,7 @@ int main(int argc, char *argv[]) {
         characterAnimations();
         marioPhysics();
 		gameInputController(kDown, kHeld, kUp);
+        handleCollisions();
 
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 

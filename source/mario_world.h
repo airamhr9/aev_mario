@@ -158,3 +158,9 @@ typedef struct {
     bool broken;
     C2D_Sprite sprite;
 } Block;
+
+//Button constants
+typedef struct {
+    C2D_Sprite sprite;
+    bool visible;
+} Button;
