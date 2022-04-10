@@ -108,6 +108,17 @@ void controllerSprites_block(int spriteid)
 	C2D_SpriteSetRotationDegrees(&block_pointer->sprite, 0); 
 }
 
+bool isInCollissionWithBlock() {
+    bool colission = mario_pointer->dx >= BLOCK_INITIAL_POS_X - 25 
+    && mario_pointer->dx <= BLOCK_INITIAL_POS_X
+    //POR ABAJO
+    && mario_pointer->dy <= BLOCK_INITIAL_POS_Y + 10
+    //POR ARRIBA
+    && mario_pointer->dy >= BLOCK_INITIAL_POS_Y - 10;
+    if (colission) printf("COLLISION YES\n");
+    return colission;
+}
+
 void characterAnimations() {
     u64 chars_now = svcGetSystemTick();
     toad_pointer->elapsed_time += (chars_now - start_loop_time);
@@ -179,14 +190,6 @@ bool isInDialogPos() {
     && mario_pointer->dy >= TOAD_INITIAL_POS_Y - 30;
 }
 
-bool isInCollissionWithBlock() {
-    bool colission = mario_pointer->dx >= BLOCK_INITIAL_POS_X - 23 
-    && mario_pointer->dx <= BLOCK_INITIAL_POS_X
-    && mario_pointer->dy <= BLOCK_INITIAL_POS_Y + 10;
-    if (colission) printf("COLLISION YES\n");
-    return colission;
-}
-
 void moveMario(u32 kHeld)
 {
 	int pos;
@@ -232,7 +235,9 @@ void moveMario(u32 kHeld)
 
 	if (kHeld & KEY_LEFT)
 	{
-        new_x -= speed;
+        if (!isInCollissionWithBlock()) {
+            new_x -= speed;
+        }
         if (ms_elapsed_time >= sprite_refresh) {
 		    if (array_contains(sprite_id, leftWalk, &pos)) {
 			    sprite_id = leftWalk[(pos + 1) % 3];
@@ -257,7 +262,10 @@ void moveMario(u32 kHeld)
 	
 	if (kHeld & KEY_RIGHT)
 	{
-        new_x += speed;
+
+        if (!isInCollissionWithBlock()) {
+            new_x += speed;
+        }
         if (ms_elapsed_time >= sprite_refresh) {
 		    if (array_contains(sprite_id, rightWalk, &pos)) {
 			    sprite_id = rightWalk[(pos + 1) % 3];
