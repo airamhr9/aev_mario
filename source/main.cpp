@@ -146,11 +146,11 @@ void marioPhysics() {
     now = svcGetSystemTick();
 
     if (mario_pointer->state == MarioState::falling) {
-        printf("MARIO IS FALLING\n");
+        //printf("MARIO IS FALLING\n");
         new_y += mario_pointer->fall_speed;
 
         if (mario_pointer->dy >= MARIO_INITIAL_POS_Y) {
-        printf("MARIO SHOULD BE WALKING\n");
+//        printf("MARIO SHOULD BE WALKING\n");
             new_y = MARIO_INITIAL_POS_Y;
             mario_pointer->state = MarioState::walking;
             if (sprite_id == FALL_LEFT || sprite_id == JUMP_LEFT) {
@@ -179,6 +179,14 @@ bool isInDialogPos() {
     && mario_pointer->dy >= TOAD_INITIAL_POS_Y - 30;
 }
 
+bool isInCollissionWithBlock() {
+    bool colission = mario_pointer->dx >= BLOCK_INITIAL_POS_X - 23 
+    && mario_pointer->dx <= BLOCK_INITIAL_POS_X
+    && mario_pointer->dy <= BLOCK_INITIAL_POS_Y + 10;
+    if (colission) printf("COLLISION YES\n");
+    return colission;
+}
+
 void moveMario(u32 kHeld)
 {
 	int pos;
@@ -197,16 +205,20 @@ void moveMario(u32 kHeld)
                     new_y -= mario_pointer->jump_speed;
 
                     if (array_contains(sprite_id, rightWalk, &pos)) {
-                        printf("CONTAINS %d in POS %d JUMP RIGHT\n", sprite_id, pos);
+                        //printf("CONTAINS %d in POS %d JUMP RIGHT\n", sprite_id, pos);
                         sprite_id = JUMP_RIGHT;
                     } else {
-                        printf("CONTAINS %d in POS %d JUMP LEFT\n", sprite_id, pos);
+                        //printf("CONTAINS %d in POS %d JUMP LEFT\n", sprite_id, pos);
                         sprite_id = JUMP_LEFT;
                     }
                 }  
             } else if (mario_pointer->state == MarioState::jumping) {
-                if (kHeld & KEY_A) { 
-                    new_y -= mario_pointer->jump_speed;
+                if ((kHeld & KEY_A)) { 
+                    if (isInCollissionWithBlock()) {
+                        mario_pointer->state = MarioState::falling;
+                    } else {
+                        new_y -= mario_pointer->jump_speed;
+                    }
                 }
             }
         } 
@@ -224,10 +236,10 @@ void moveMario(u32 kHeld)
         if (ms_elapsed_time >= sprite_refresh) {
 		    if (array_contains(sprite_id, leftWalk, &pos)) {
 			    sprite_id = leftWalk[(pos + 1) % 3];
-            printf("ADVANCING LEFT\n");
+            //printf("ADVANCING LEFT\n");
                 ms_elapsed_time = 0;
             } else {
-            printf("START TO LOOK LEFT\n");
+            //printf("START TO LOOK LEFT\n");
                 switch(mario_pointer->state) {
                     case MarioState::walking: 
 			            sprite_id = LEFT_WALK_1;
@@ -250,10 +262,10 @@ void moveMario(u32 kHeld)
 		    if (array_contains(sprite_id, rightWalk, &pos)) {
 			    sprite_id = rightWalk[(pos + 1) % 3];
                 ms_elapsed_time = 0;
-            printf("ADVANCING RIGHT\n");
+            //printf("ADVANCING RIGHT\n");
             } else {
                 switch(mario_pointer->state) {
-                                printf("START TO LOOK RIGHT\n");
+             //                   printf("START TO LOOK RIGHT\n");
                     case MarioState::walking: 
 			            sprite_id = RIGHT_WALK_1;
                         break;
@@ -282,10 +294,10 @@ void setIdleMario(int kUp) {
     int pos = -1;
     if (mario_pointer->state == MarioState::walking) {
         if (array_contains(sprite_id, rightWalk, &pos)) {
-            printf("AQUI RIGHT WALK EN KEY UP\n");
+            //printf("AQUI RIGHT WALK EN KEY UP\n");
             sprite_id = RIGHT_WALK_1;
         } else {
-            printf("AQUI LEFT WALK EN KEY UP sprite id %d  POS %d\n", sprite_id, pos);
+            //printf("AQUI LEFT WALK EN KEY UP sprite id %d  POS %d\n", sprite_id, pos);
             sprite_id = LEFT_WALK_1;
         }
     }
