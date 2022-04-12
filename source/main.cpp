@@ -115,7 +115,14 @@ bool isInCollissionWithBlock() {
     && mario_pointer->dy <= BLOCK_INITIAL_POS_Y + 10
     //POR ARRIBA
     && mario_pointer->dy >= BLOCK_INITIAL_POS_Y - 10;
-    if (colission) printf("COLLISION YES\n");
+    if (colission) controllerSprites_block(1); //Aquí el bloque cambia al otro sprite y suelta moneda
+    return colission;
+}
+
+//Solo comprueba si está en colisión desde el eje X, si lo hace desde falling (que se comprobará desde otro sitio) se mata al bicho y consigue una moneda
+bool isInCollissionWithGoomba() {
+    bool colission = mario_pointer->dx > goomba_pointer->dx-10
+    && mario_pointer->dx < goomba_pointer->dx+10;
     return colission;
 }
 
@@ -287,7 +294,10 @@ void moveMario(u32 kHeld)
     		}
         } 	
     }	 
-
+	if(isInCollissionWithGoomba());
+	//En los bordes no avanza
+	if(new_x < -10.0) new_x = -10.0;
+	if(new_x > 366.0) new_x = 366.0;
     C2D_SpriteMove(&mario_pointer->sprite, mario_pointer->dx = new_x, mario_pointer->dy = new_y);
     controllerSprites_mario(sprite_id);
 }
@@ -569,7 +579,7 @@ void prepareSound(char* soundPath, CWAV* cwav) {
  ***************************/
 void prepareSounds() {
     prepareSound("romfs:/ostd.cwav", ost);
-    ost->volume = 0.4;
+    ost->volume = 40;
     cwavPlay(ost, 0, -1);
 
     prepareSound("romfs:/toad.cwav", toadSound);
@@ -607,7 +617,16 @@ int main(int argc, char *argv[]) {
         if (!cwavIsPlaying(ost)) {
             cwavPlay(ost, 0 , -1);
         }
-
+		
+		if(isInCollissionWithGoomba() && mario_pointer->state == MarioState::falling && mario_pointer->dy <= GOOMBA_INITIAL_POS_Y-10){
+			printf("Mario ha matado a Goomba!\n");
+			//Falta hacer animación de muerte para Goomba, y que salte moneda
+		}
+		if (isInCollissionWithGoomba() && mario_pointer->dy <= GOOMBA_INITIAL_POS_Y) {
+			printf("Mario ha sido asesinado por Goomba\n");
+			//Falta hacer animación de muerte para Mario, y que se acabe el juego (podemos ponerle un botón para reiniciar
+		}			
+		
         start_loop_time = svcGetSystemTick();       
 
         hidScanInput();
