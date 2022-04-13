@@ -135,6 +135,7 @@ typedef struct {
     float direction_delay;
     C2D_Sprite sprite;
     int current_sprite;
+    int rotation;
     float animation_elapsed_time;
     float direction_elapsed_time;
     bool current_direction;
@@ -147,7 +148,7 @@ enum GoombaSprites {
     GOOMBADEAD
 };
 
-int goomba_walk_anim[] = { GOOMBA1, GOOMBA2, GOOMBA3 };
+int goomba_sprites[] = { GOOMBA1, GOOMBA2, GOOMBA3, GOOMBADEAD };
 
 // Block constants
 #define BLOCK_INITIAL_POS_Y 110

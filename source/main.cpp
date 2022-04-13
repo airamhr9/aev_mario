@@ -94,10 +94,10 @@ void controllerSprites_Button()
 
 void controllerSprites_Goomba()
 {
-	C2D_SpriteFromSheet(&goomba_pointer->sprite, goomba_spriteSheet, goomba_walk_anim[goomba_pointer->current_sprite]);
+	C2D_SpriteFromSheet(&goomba_pointer->sprite, goomba_spriteSheet, goomba_sprites[goomba_pointer->current_sprite]);
     C2D_SpriteSetCenter(&goomba_pointer->sprite, 0.f, 0.f);
 	C2D_SpriteSetPos(&goomba_pointer->sprite, goomba_pointer->dx, goomba_pointer->dy);
-	C2D_SpriteSetRotationDegrees(&goomba_pointer->sprite, 0); 
+	C2D_SpriteSetRotationDegrees(&goomba_pointer->sprite, goomba_pointer->rotation); 
 }
 
 void controllerSprites_block(int spriteid)
@@ -121,8 +121,9 @@ bool isInCollissionWithBlock() {
 
 //Solo comprueba si está en colisión desde el eje X, si lo hace desde falling (que se comprobará desde otro sitio) se mata al bicho y consigue una moneda
 bool isInCollissionWithGoomba() {
-    bool colission = mario_pointer->dx > goomba_pointer->dx-10
-    && mario_pointer->dx < goomba_pointer->dx+10;
+    bool colission = mario_pointer->dx >= goomba_pointer->dx-10
+    && mario_pointer->dx <= goomba_pointer->dx+10 
+    && mario_pointer->dy + 45 >= goomba_pointer->dy;
     return colission;
 }
 
@@ -139,18 +140,27 @@ void characterAnimations() {
     }
 
     //GOOMBA ANIMATION
-    if (goomba_pointer->current_direction == DIRECTION_RIGHT) {
-        goomba_pointer->dx += goomba_pointer->speed;
+    if (goomba_pointer->current_sprite != GOOMBADEAD) {
+        if (goomba_pointer->current_direction == DIRECTION_RIGHT) {
+            goomba_pointer->dx += goomba_pointer->speed;
+        } else {
+            goomba_pointer->dx -= goomba_pointer->speed;
+        }
+        if (goomba_pointer->animation_elapsed_time >= goomba_pointer->animation_delay) {
+            goomba_pointer->current_sprite = ++goomba_pointer->current_sprite % GOOMBA_ANIMATION_SPRITES;
+            goomba_pointer->animation_elapsed_time = 0;
+        }
+        if (goomba_pointer->direction_elapsed_time >= goomba_pointer->direction_delay) {
+            goomba_pointer->current_direction = !goomba_pointer->current_direction;
+            goomba_pointer->direction_elapsed_time = 0;
+        }
     } else {
-        goomba_pointer->dx -= goomba_pointer->speed;
-    }
-    if (goomba_pointer->animation_elapsed_time >= goomba_pointer->animation_delay) {
-        goomba_pointer->current_sprite = ++goomba_pointer->current_sprite % GOOMBA_ANIMATION_SPRITES;
-        goomba_pointer->animation_elapsed_time = 0;
-    }
-    if (goomba_pointer->direction_elapsed_time >= goomba_pointer->direction_delay) {
-        goomba_pointer->current_direction = !goomba_pointer->current_direction;
-        goomba_pointer->direction_elapsed_time = 0;
+        if (goomba_pointer->dy >= TOP_SCREEN_HEIGHT) {
+            goomba_pointer->alive = false;
+        } else {
+            goomba_pointer->dy += 1.5;
+            goomba_pointer->rotation += 4;
+        }
     }
     
     
@@ -294,7 +304,7 @@ void moveMario(u32 kHeld)
     		}
         } 	
     }	 
-	if(isInCollissionWithGoomba());
+	//if(isInCollissionWithGoomba());
 	//En los bordes no avanza
 	if(new_x < -10.0) new_x = -10.0;
 	if(new_x > 366.0) new_x = 366.0;
@@ -399,6 +409,7 @@ void prepare_goomba() {
     C2D_SpriteSetRotation(&goomba_pointer->sprite, C3D_Angle(0));
     goomba_pointer->animation_delay = GOOMBA_ANIMATION_DELAY;
     goomba_pointer->current_sprite = 0;
+    goomba_pointer->rotation = 0;
     goomba_pointer->alive = true;
     goomba_pointer->direction_delay = GOOMBA_DIRECTION_TIME;
     goomba_pointer->dx = GOOMBA_INITIAL_POS_X;
@@ -512,9 +523,23 @@ void handleToadCollision() {
     }
 }
 
+void handleGoombaCollision() {
+    if (goomba_pointer->alive && isInCollissionWithGoomba()) {
+        if(mario_pointer->state != MarioState::walking){
+            printf("Mario ha matado a Goomba!\n");
+            mario_pointer->dy = mario_pointer->dy - 5;
+            goomba_pointer->current_sprite = GOOMBADEAD;
+            controllerSprites_mario(sprite_id);
+        } else {
+            printf("Mario ha sido asesinado por Goomba\n");
+        }			
+    }
+}
+
 
 void handleCollisions() {
     handleToadCollision();
+    handleGoombaCollision();
 } 
 
 /****************************
@@ -579,7 +604,7 @@ void prepareSound(char* soundPath, CWAV* cwav) {
  ***************************/
 void prepareSounds() {
     prepareSound("romfs:/ostd.cwav", ost);
-    ost->volume = 40;
+    ost->volume = .5;
     cwavPlay(ost, 0, -1);
 
     prepareSound("romfs:/toad.cwav", toadSound);
@@ -617,15 +642,6 @@ int main(int argc, char *argv[]) {
         if (!cwavIsPlaying(ost)) {
             cwavPlay(ost, 0 , -1);
         }
-		
-		if(isInCollissionWithGoomba() && mario_pointer->state == MarioState::falling && mario_pointer->dy <= GOOMBA_INITIAL_POS_Y-10){
-			printf("Mario ha matado a Goomba!\n");
-			//Falta hacer animación de muerte para Goomba, y que salte moneda
-		}
-		if (isInCollissionWithGoomba() && mario_pointer->dy <= GOOMBA_INITIAL_POS_Y) {
-			printf("Mario ha sido asesinado por Goomba\n");
-			//Falta hacer animación de muerte para Mario, y que se acabe el juego (podemos ponerle un botón para reiniciar
-		}			
 		
         start_loop_time = svcGetSystemTick();       
 
