@@ -1,15 +1,6 @@
 
 aev_mario.3dsx
-aev_mario.3dsx
 aev_mario.elf
-build/aev_mario.lst
-build/main.o
-build/map.d
-build/mario.d
-build/mariomap.d
-build/toad.d
-build/toadtext.d
-build/goomba.d
-build/button.d
-build/aev_mario.map
-build/Blocks.d
+build/
+aev_mario.smdh
+.vscode/c_cpp_properties.json
