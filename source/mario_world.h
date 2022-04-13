@@ -84,6 +84,17 @@ typedef struct {
     C2D_Sprite sprite;
 } Background;
 
+//Coin constants
+#define COIN_ANIMATION_TIME 2000
+
+typedef struct {
+    C2D_Sprite sprite;
+    bool visible;
+    float elapsed_time;
+    float dx, dy;
+    float animation_time;
+} Coin;
+
 //TOAD constants
 #define TOAD_CRY_TIME 8000
 #define TOAD_INITIAL_POS_Y 183
@@ -139,6 +150,7 @@ typedef struct {
     float animation_elapsed_time;
     float direction_elapsed_time;
     bool current_direction;
+    Coin coin;
 } Goomba;
 
 enum GoombaSprites {
@@ -153,11 +165,15 @@ int goomba_sprites[] = { GOOMBA1, GOOMBA2, GOOMBA3, GOOMBADEAD };
 // Block constants
 #define BLOCK_INITIAL_POS_Y 110
 #define BLOCK_INITIAL_POS_X 150
+#define BLOCK_UNTOUCHED 0
+#define BLOCK_TOUCHED 1
 
 typedef struct {
     float dx, dy; 
     bool broken;
     C2D_Sprite sprite;
+    int current_sprite;
+    Coin coin;
 } Block;
 
 //Button constants
@@ -165,3 +181,4 @@ typedef struct {
     C2D_Sprite sprite;
     bool visible;
 } Button;
+

@@ -32,6 +32,7 @@ static C2D_SpriteSheet toad_spriteSheet;
 static C2D_SpriteSheet toadText_spriteSheet;
 static C2D_SpriteSheet goomba_spriteSheet;
 static C2D_SpriteSheet button_spriteSheet;
+static C2D_SpriteSheet coin_spriteSheet;
 
 Mario *mario_pointer = &mario;
 Toad *toad_pointer = &toad;
@@ -39,6 +40,9 @@ ToadText *toadText_pointer = &toadText;
 Goomba *goomba_pointer = &goomba;
 Block *block_pointer = &block;
 Button *button_pointer = &button;
+Coin *coin_block_pointer = &block.coin;
+Coin *coin_goomba_pointer = &goomba.coin;
+
 
 int sprite_id = RIGHT_WALK_1;
 u64 start_loop_time = svcGetSystemTick();
@@ -98,31 +102,43 @@ void controllerSprites_Goomba()
     C2D_SpriteSetCenter(&goomba_pointer->sprite, 0.f, 0.f);
 	C2D_SpriteSetPos(&goomba_pointer->sprite, goomba_pointer->dx, goomba_pointer->dy);
 	C2D_SpriteSetRotationDegrees(&goomba_pointer->sprite, goomba_pointer->rotation); 
+
+	C2D_SpriteFromSheet(&coin_goomba_pointer->sprite, coin_spriteSheet, 0);
+ 	C2D_SpriteSetCenter(&coin_goomba_pointer->sprite, 0.f, 0.f);
+	C2D_SpriteSetPos(&coin_goomba_pointer->sprite, coin_goomba_pointer->dx, coin_goomba_pointer->dy);
+	C2D_SpriteSetRotationDegrees(&coin_goomba_pointer->sprite, 0); 
 }
 
-void controllerSprites_block(int spriteid)
+void controllerSprites_block()
 {
-	C2D_SpriteFromSheet(&block_pointer->sprite, block_spriteSheet, spriteid);
+	C2D_SpriteFromSheet(&block_pointer->sprite, block_spriteSheet, block_pointer->current_sprite);
  	C2D_SpriteSetCenter(&block_pointer->sprite, 0.f, 0.f);
 	C2D_SpriteSetPos(&block_pointer->sprite, block_pointer->dx, block_pointer->dy);
 	C2D_SpriteSetRotationDegrees(&block_pointer->sprite, 0); 
+
+	C2D_SpriteFromSheet(&coin_block_pointer->sprite, coin_spriteSheet, 0);
+ 	C2D_SpriteSetCenter(&coin_block_pointer->sprite, 0.f, 0.f);
+	C2D_SpriteSetPos(&coin_block_pointer->sprite, coin_block_pointer->dx, coin_block_pointer->dy);
+	C2D_SpriteSetRotationDegrees(&coin_block_pointer->sprite, 0); 
 }
 
 bool isInCollissionWithBlock() {
     bool colission = mario_pointer->dx >= BLOCK_INITIAL_POS_X - 25 
     && mario_pointer->dx <= BLOCK_INITIAL_POS_X
-    //POR ABAJO
     && mario_pointer->dy <= BLOCK_INITIAL_POS_Y + 10
-    //POR ARRIBA
     && mario_pointer->dy >= BLOCK_INITIAL_POS_Y - 10;
-    if (colission) controllerSprites_block(1); //Aquí el bloque cambia al otro sprite y suelta moneda
+    if (colission) {
+        block_pointer->current_sprite = BLOCK_TOUCHED;
+        controllerSprites_block();
+        coin_block_pointer->visible = true;
+    }  //Aquí el bloque cambia al otro sprite y suelta moneda
     return colission;
 }
 
 //Solo comprueba si está en colisión desde el eje X, si lo hace desde falling (que se comprobará desde otro sitio) se mata al bicho y consigue una moneda
 bool isInCollissionWithGoomba() {
-    bool colission = mario_pointer->dx >= goomba_pointer->dx-10
-    && mario_pointer->dx <= goomba_pointer->dx+10 
+    bool colission = mario_pointer->dx >= goomba_pointer-> dx - 23
+    && mario_pointer->dx <= goomba_pointer->dx + 1
     && mario_pointer->dy + 45 >= goomba_pointer->dy;
     return colission;
 }
@@ -162,10 +178,31 @@ void characterAnimations() {
             goomba_pointer->rotation += 4;
         }
     }
+
+    if (coin_block_pointer->visible) {
+        coin_block_pointer->elapsed_time += (chars_now - start_loop_time);
+        if (coin_block_pointer->elapsed_time <= coin_block_pointer->animation_time) {
+            coin_block_pointer->dy -= 4;
+        } else {
+            coin_block_pointer->visible = false;
+            //Sumar contador monedas
+        }
+    }
+
+    if (coin_goomba_pointer->visible) {
+        coin_goomba_pointer->elapsed_time += (chars_now - start_loop_time);
+        if (coin_goomba_pointer->elapsed_time <= coin_goomba_pointer->animation_time) {
+            coin_goomba_pointer->dy -= 4;
+        } else {
+            coin_goomba_pointer->visible = false;
+            //Sumar contador monedas
+        }
+    }
     
     
     controllerSprites_Toad();
     controllerSprites_Goomba();
+    controllerSprites_block();
 }
 
 void marioPhysics() {
@@ -362,6 +399,10 @@ void prepare_sprites() {
 	if (!block_spriteSheet) {
         svcBreak(USERBREAK_PANIC);
     }
+    coin_spriteSheet = C2D_SpriteSheetLoad("romfs:/gfx/coin.t3x");
+    if (!coin_spriteSheet) {
+        svcBreak(USERBREAK_PANIC);
+    }
 
     //Screens
     background_spriteSheet = C2D_SpriteSheetLoad("romfs:/gfx/map.t3x");
@@ -400,6 +441,17 @@ void prepare_block() {
     block_pointer->broken = false;
     block_pointer->dx = BLOCK_INITIAL_POS_X;
     block_pointer->dy = BLOCK_INITIAL_POS_Y;
+    block_pointer->current_sprite = BLOCK_UNTOUCHED;
+
+    C2D_SpriteFromSheet(&coin_block_pointer->sprite, coin_spriteSheet, 0);
+    C2D_SpriteSetCenter(&coin_block_pointer->sprite, 0.f, 0.f);
+    C2D_SpriteSetPos(&coin_block_pointer->sprite, BLOCK_INITIAL_POS_X, BLOCK_INITIAL_POS_Y);
+    C2D_SpriteSetRotation(&coin_block_pointer->sprite, C3D_Angle(0));
+    coin_block_pointer->visible = false;
+    coin_block_pointer->animation_time = COIN_ANIMATION_TIME;
+    coin_block_pointer->dx = BLOCK_INITIAL_POS_X;
+    coin_block_pointer->dy = BLOCK_INITIAL_POS_Y;
+    coin_block_pointer->elapsed_time = 0;
 }
 
 void prepare_goomba() {
@@ -416,6 +468,17 @@ void prepare_goomba() {
     goomba_pointer->dy = GOOMBA_INITIAL_POS_Y;
     goomba_pointer->speed = GOOMBA_SPEED;
     goomba_pointer->current_direction = DIRECTION_RIGHT;
+
+
+    C2D_SpriteFromSheet(&coin_goomba_pointer->sprite, coin_spriteSheet, 0);
+    C2D_SpriteSetCenter(&coin_goomba_pointer->sprite, 0.f, 0.f);
+    C2D_SpriteSetPos(&coin_goomba_pointer->sprite, GOOMBA_INITIAL_POS_X, GOOMBA_INITIAL_POS_Y);
+    C2D_SpriteSetRotation(&coin_goomba_pointer->sprite, C3D_Angle(0));
+    coin_goomba_pointer->visible = false;
+    coin_goomba_pointer->animation_time = COIN_ANIMATION_TIME;
+    coin_goomba_pointer->dx = GOOMBA_INITIAL_POS_X;
+    coin_goomba_pointer->dy = GOOMBA_INITIAL_POS_Y;
+    coin_goomba_pointer->elapsed_time = 0;
 }
 
 void prepare_toad() {
@@ -456,11 +519,17 @@ void draw_characters() {
     if (goomba_pointer->alive) {
         C2D_DrawSprite(&goomba.sprite);
     }
+    if (coin_goomba_pointer->visible) {
+        C2D_DrawSprite(&goomba.coin.sprite);
+    }
 }
 
 void draw_scenery() {
     C2D_DrawSprite(&background.sprite);
     C2D_DrawSprite(&block.sprite);
+    if (coin_block_pointer->visible) {
+        C2D_DrawSprite(&block.coin.sprite);
+    }
 }
 
 void sceneInit() {
@@ -474,6 +543,8 @@ void scenesExit() {
     C2D_SpriteSheetFree(mario_spriteSheet);
     C2D_SpriteSheetFree(toad_spriteSheet);
     C2D_SpriteSheetFree(goomba_spriteSheet);
+    C2D_SpriteSheetFree(block_spriteSheet);
+    C2D_SpriteSheetFree(coin_spriteSheet);
 }
 
 void initGame() {
@@ -502,8 +573,7 @@ void manageKeyPress(u32 kDown) {
 
 }
 
-void gameInputController(u32 kDown, u32 kHeld, u32 kUp)
-{
+void gameInputController(u32 kDown, u32 kHeld, u32 kUp) {
     if (kDown) {
         manageKeyPress(kDown);
     }
@@ -524,10 +594,13 @@ void handleToadCollision() {
 }
 
 void handleGoombaCollision() {
-    if (goomba_pointer->alive && isInCollissionWithGoomba()) {
+    if (goomba_pointer->alive && isInCollissionWithGoomba() && goomba_pointer->dy == GOOMBA_INITIAL_POS_Y) {
         if(mario_pointer->state != MarioState::walking){
             printf("Mario ha matado a Goomba!\n");
             mario_pointer->dy = mario_pointer->dy - 5;
+            coin_goomba_pointer->visible = true;
+            coin_goomba_pointer->dx = goomba_pointer->dx;
+            coin_goomba_pointer->dy = goomba_pointer->dy;
             goomba_pointer->current_sprite = GOOMBADEAD;
             controllerSprites_mario(sprite_id);
         } else {
