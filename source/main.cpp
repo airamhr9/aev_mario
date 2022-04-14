@@ -23,7 +23,9 @@ static Toad toad;
 static ToadText toadText;
 static Goomba goomba;
 static Button button;
+static Button button_title;
 static Block block;
+static Title title;
 
 static C2D_SpriteSheet mario_spriteSheet;
 static C2D_SpriteSheet background_spriteSheet;
@@ -33,6 +35,7 @@ static C2D_SpriteSheet toadText_spriteSheet;
 static C2D_SpriteSheet goomba_spriteSheet;
 static C2D_SpriteSheet button_spriteSheet;
 static C2D_SpriteSheet coin_spriteSheet;
+static C2D_SpriteSheet title_spriteSheet;
 
 Mario *mario_pointer = &mario;
 Toad *toad_pointer = &toad;
@@ -40,8 +43,10 @@ ToadText *toadText_pointer = &toadText;
 Goomba *goomba_pointer = &goomba;
 Block *block_pointer = &block;
 Button *button_pointer = &button;
+Button *button_title_pointer = &button_title;
 Coin *coin_block_pointer = &block.coin;
 Coin *coin_goomba_pointer = &goomba.coin;
+Title *title_pointer = &title;
 
 
 int sprite_id = RIGHT_WALK_1;
@@ -393,6 +398,10 @@ void prepare_sprites() {
     if (!button_spriteSheet) {
         svcBreak(USERBREAK_PANIC);
     }
+    title_spriteSheet = C2D_SpriteSheetLoad("romfs:/gfx/title.t3x");
+    if (!title_spriteSheet) {
+        svcBreak(USERBREAK_PANIC);
+    }
 
     //Objects
     block_spriteSheet = C2D_SpriteSheetLoad("romfs:/gfx/Blocks.t3x");
@@ -431,6 +440,19 @@ void prepare_game_screen() {
     C2D_SpriteFromSheet(&screenSprite->sprite, background_spriteSheet,0);
     C2D_SpriteSetCenter(&screenSprite->sprite, 0.5f, 1.0f);
     C2D_SpriteSetPos(&screenSprite->sprite, TOP_SCREEN_WIDTH / 2, TOP_SCREEN_HEIGHT);
+}
+
+void prepare_title() {
+    C2D_SpriteFromSheet(&title_pointer->sprite, title_spriteSheet,0);
+    C2D_SpriteSetCenter(&title_pointer->sprite, 0.5f, 1.0f);
+    C2D_SpriteSetPos(&title_pointer->sprite, TOP_SCREEN_WIDTH / 2, TOP_SCREEN_HEIGHT - 100);
+    C2D_SpriteSetRotation(&title_pointer->sprite, C3D_Angle(0));
+    title_pointer->visible = true;
+
+	C2D_SpriteFromSheet(&button_title_pointer->sprite, button_spriteSheet, 0);
+    C2D_SpriteSetCenter(&button_title_pointer->sprite, 0.f, 0.f);
+	C2D_SpriteSetPos(&button_title_pointer->sprite, TOP_SCREEN_WIDTH - 215, TOP_SCREEN_HEIGHT - 80);
+	C2D_SpriteSetRotationDegrees(&button_title_pointer->sprite, 0); 
 }
 
 void prepare_block() {
@@ -503,6 +525,11 @@ void prepare_toad() {
     button_pointer->visible = false;
 }
 
+void draw_title() {
+    C2D_DrawSprite(&title.sprite);
+    C2D_DrawSprite(&button_title.sprite);
+}   
+
 void draw_mario() {
     if (mario_pointer->alive) {
         C2D_DrawSprite(&mario.sprite);
@@ -545,9 +572,11 @@ void scenesExit() {
     C2D_SpriteSheetFree(goomba_spriteSheet);
     C2D_SpriteSheetFree(block_spriteSheet);
     C2D_SpriteSheetFree(coin_spriteSheet);
+    C2D_SpriteSheetFree(title_spriteSheet);
 }
 
 void initGame() {
+    prepare_title();
     prepare_mario(MARIO_INITIAL_POS_X, MARIO_INITIAL_POS_Y);
     prepare_block();
     prepare_goomba();
@@ -555,10 +584,16 @@ void initGame() {
     prepare_game_screen();
 }
 
+
 void drawerTopScreenController() {
     draw_scenery();
-    draw_characters();
-    draw_mario();
+
+    if (title_pointer->visible) {
+        draw_title();
+    } else {
+        draw_characters();
+        draw_mario();
+    }
 }
 
 void manageKeyPress(u32 kDown) {
@@ -570,7 +605,12 @@ void manageKeyPress(u32 kDown) {
             cwavPlay(toadSound, 0, -1);
         }
     }
+}
 
+void hideTitle(u32 kDown) {
+    if (kDown & KEY_A) {
+        title_pointer->visible = false;
+    }
 }
 
 void gameInputController(u32 kDown, u32 kHeld, u32 kUp) {
@@ -724,10 +764,14 @@ int main(int argc, char *argv[]) {
 		u32 kHeld = hidKeysHeld();
         u32 kUp = hidKeysUp();
 		
-        characterAnimations();
-        marioPhysics();
-		gameInputController(kDown, kHeld, kUp);
-        handleCollisions();
+        if (title_pointer->visible) {
+            hideTitle(kDown);
+        } else {
+            characterAnimations();
+            marioPhysics();
+            gameInputController(kDown, kHeld, kUp);
+            handleCollisions();
+        }
 
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 

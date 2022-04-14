@@ -182,3 +182,8 @@ typedef struct {
     bool visible;
 } Button;
 
+typedef struct {
+    C2D_Sprite sprite;
+    bool visible;
+} Title;
+
