@@ -132,7 +132,7 @@ bool isInCollissionWithBlock() {
     && mario_pointer->dx <= BLOCK_INITIAL_POS_X
     && mario_pointer->dy <= BLOCK_INITIAL_POS_Y + 10
     && mario_pointer->dy >= BLOCK_INITIAL_POS_Y - 10;
-    if (colission) {
+    if (colission && block_pointer->current_sprite != BLOCK_TOUCHED) {
         block_pointer->current_sprite = BLOCK_TOUCHED;
         controllerSprites_block();
         coin_block_pointer->visible = true;
@@ -187,7 +187,7 @@ void characterAnimations() {
     if (coin_block_pointer->visible) {
         coin_block_pointer->elapsed_time += (chars_now - start_loop_time);
         if (coin_block_pointer->elapsed_time <= coin_block_pointer->animation_time) {
-            coin_block_pointer->dy -= 4;
+            coin_block_pointer->dy -= 3;
         } else {
             coin_block_pointer->visible = false;
             //Sumar contador monedas
@@ -197,7 +197,7 @@ void characterAnimations() {
     if (coin_goomba_pointer->visible) {
         coin_goomba_pointer->elapsed_time += (chars_now - start_loop_time);
         if (coin_goomba_pointer->elapsed_time <= coin_goomba_pointer->animation_time) {
-            coin_goomba_pointer->dy -= 4;
+            coin_goomba_pointer->dy -= 3;
         } else {
             coin_goomba_pointer->visible = false;
             //Sumar contador monedas
@@ -314,6 +314,8 @@ void moveMario(u32 kHeld)
                     case MarioState::falling:
                         sprite_id = FALL_LEFT;
                         break;
+                    case MarioState::dead:
+                        break;
                 }
 		    } 	
         }
@@ -341,6 +343,8 @@ void moveMario(u32 kHeld)
                         break;
                     case MarioState::falling:
                         sprite_id = FALL_RIGHT;
+                        break;
+                    case MarioState::dead:
                         break;
                 }
     		}

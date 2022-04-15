@@ -90,7 +90,7 @@ typedef struct {
 } Background;
 
 //Coin constants
-#define COIN_ANIMATION_TIME 2000
+#define COIN_ANIMATION_TIME 3000
 
 typedef struct {
     C2D_Sprite sprite;
