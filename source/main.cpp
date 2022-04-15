@@ -619,6 +619,16 @@ void hideTitle(u32 kDown) {
     }
 }
 
+void restart() {
+    mario_pointer->dx = MARIO_INITIAL_POS_X;
+    mario_pointer->dy = MARIO_INITIAL_POS_Y;
+    block_pointer->current_sprite = BLOCK_UNTOUCHED;
+    mario_pointer->state = MarioState::walking;
+    mario_pointer->dead_elapsed_time = 0;
+    mario_pointer->alive = true;
+    title_pointer->visible = true;
+}
+
 void handleMarioDead() {
     float now_dead = svcGetSystemTick();
     mario_pointer->dead_elapsed_time += (now_dead - start_loop_time);
@@ -629,6 +639,7 @@ void handleMarioDead() {
         mario_pointer->dy += 3;
         if (mario_pointer->dy > TOP_SCREEN_HEIGHT) {
             mario_pointer->alive = false;
+            restart();
         }
     }
 
