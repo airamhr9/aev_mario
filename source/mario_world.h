@@ -16,6 +16,7 @@
 #define MARIO_INITIAL_POS_Y 173
 #define MARIO_INITIAL_POS_X 10
 #define WAlK_ANIMATION_SIZE 3
+#define MARIO_UPWARDS_DEAD_DELAY 15000
 enum Mario_Sprites {
 	LEFT_WALK_2,
     LEFT_WALK_3,
@@ -46,7 +47,8 @@ enum Mario_Sprites {
     EQUILIBRIUM_RIGHT_2,
     EQUILIBRIUM_RIGHT_1,
     FLY_RIGHT,
-    UNKNOWN_2
+    UNKNOWN_2,
+    MARIODEAD
 };
 
 int rightWalk[] = {
@@ -65,7 +67,8 @@ int leftWalk[] = {
 enum MarioState {
     walking,
     jumping,
-    falling
+    falling,
+    dead
 };
 
 typedef struct {
@@ -76,6 +79,8 @@ typedef struct {
     bool alive;
     float jump_speed;
     float fall_speed;
+    float upwards_dead_anim_delay;
+    float dead_elapsed_time;
     C2D_Sprite sprite;
     MarioState state;
 } Mario;

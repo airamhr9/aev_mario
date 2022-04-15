@@ -433,6 +433,8 @@ void prepare_mario(int posX, int posY) {
     mario_pointer->jump_speed = MARIO_JUMP_SPEED;
     mario_pointer->fall_speed = MARIO_FALL_SPEED;
     mario_pointer->state = MarioState::walking;
+    mario_pointer->dead_elapsed_time = 0;
+    mario_pointer->upwards_dead_anim_delay = MARIO_UPWARDS_DEAD_DELAY;
 }
 
 void prepare_game_screen() {
@@ -613,14 +615,34 @@ void hideTitle(u32 kDown) {
     }
 }
 
-void gameInputController(u32 kDown, u32 kHeld, u32 kUp) {
-    if (kDown) {
-        manageKeyPress(kDown);
+void handleMarioDead() {
+    float now_dead = svcGetSystemTick();
+    mario_pointer->dead_elapsed_time += (now_dead - start_loop_time);
+
+    if (mario_pointer->dead_elapsed_time <= mario_pointer->upwards_dead_anim_delay) {
+        mario_pointer->dy -= 2;
+    } else {
+        mario_pointer->dy += 3;
+        if (mario_pointer->dy > TOP_SCREEN_HEIGHT) {
+            mario_pointer->alive = false;
+        }
     }
-    if (kUp) {
-        setIdleMario(kUp);
-    } else if (kHeld) {
-	    moveMario(kHeld);
+
+    controllerSprites_mario(sprite_id);
+}
+
+void gameInputController(u32 kDown, u32 kHeld, u32 kUp) {
+    if (mario_pointer->state != MarioState::dead) {
+        if (kDown) {
+            manageKeyPress(kDown);
+        }
+        if (kUp) {
+            setIdleMario(kUp);
+        } else if (kHeld) {
+            moveMario(kHeld);
+        }
+    } else {
+        handleMarioDead();
     }
 }
 
@@ -635,7 +657,7 @@ void handleToadCollision() {
 
 void handleGoombaCollision() {
     if (goomba_pointer->alive && isInCollissionWithGoomba() && goomba_pointer->dy == GOOMBA_INITIAL_POS_Y) {
-        if(mario_pointer->state != MarioState::walking){
+        if(mario_pointer->state != MarioState::walking && mario_pointer->state != MarioState::dead){
             printf("Mario ha matado a Goomba!\n");
             mario_pointer->dy = mario_pointer->dy - 5;
             coin_goomba_pointer->visible = true;
@@ -645,6 +667,8 @@ void handleGoombaCollision() {
             controllerSprites_mario(sprite_id);
         } else {
             printf("Mario ha sido asesinado por Goomba\n");
+            mario_pointer->state = MarioState::dead;
+            sprite_id = MARIODEAD;
         }			
     }
 }
