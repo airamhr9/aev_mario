@@ -26,6 +26,7 @@ static Button button;
 static Button button_title;
 static Block block;
 static Title title;
+static Scoreboard scoreboard;
 
 static C2D_SpriteSheet mario_spriteSheet;
 static C2D_SpriteSheet background_spriteSheet;
@@ -36,6 +37,7 @@ static C2D_SpriteSheet goomba_spriteSheet;
 static C2D_SpriteSheet button_spriteSheet;
 static C2D_SpriteSheet coin_spriteSheet;
 static C2D_SpriteSheet title_spriteSheet;
+static C2D_SpriteSheet scoreboard_spriteSheet;
 
 Mario *mario_pointer = &mario;
 Toad *toad_pointer = &toad;
@@ -47,6 +49,7 @@ Button *button_title_pointer = &button_title;
 Coin *coin_block_pointer = &block.coin;
 Coin *coin_goomba_pointer = &goomba.coin;
 Title *title_pointer = &title;
+Scoreboard *scoreboard_pointer = &scoreboard;
 
 
 int sprite_id = RIGHT_WALK_1;
@@ -74,6 +77,16 @@ bool array_contains(int val, int array[], int* pos) {
 
 	return 0;
 } 
+
+void controllerSprites_scoreboard()
+{
+	// Position, rotation and SPEED
+	C2D_SpriteFromSheet(&scoreboard_pointer->sprite, scoreboard_spriteSheet, 0);
+	C2D_SpriteSetCenter(&scoreboard_pointer->sprite, 0.f, 0.f);
+	C2D_SpriteSetPos(&scoreboard_pointer->sprite, TOAD_INITIAL_POS_X - 3, TOAD_INITIAL_POS_Y - 30);
+	C2D_SpriteSetRotationDegrees(&scoreboard_pointer->sprite, 0); 
+	C2D_DrawSprite(&scoreboard_pointer->sprite);
+}
 
 void controllerSprites_mario(int spriteid)
 {
@@ -379,6 +392,10 @@ void setIdleMario(int kUp) {
 }
 
 void prepare_sprites() {
+	scoreboard_spriteSheet = C2D_SpriteSheetLoad("romfs:/gfx/scoreboard.t3x");
+    if (!scoreboard_spriteSheet) {
+        svcBreak(USERBREAK_PANIC);
+    }
     //Characters
     mario_spriteSheet = C2D_SpriteSheetLoad("romfs:/gfx/mario.t3x");
     if (!mario_spriteSheet) {
@@ -460,6 +477,14 @@ void prepare_title() {
 	C2D_SpriteSetPos(&button_title_pointer->sprite, TOP_SCREEN_WIDTH - 215, TOP_SCREEN_HEIGHT - 80);
 	C2D_SpriteSetRotationDegrees(&button_title_pointer->sprite, 0); 
 }
+
+void prepare_scoreboard() {
+    C2D_SpriteFromSheet(&scoreboard_pointer->sprite, scoreboard_spriteSheet,0);
+    C2D_SpriteSetCenter(&scoreboard_pointer->sprite, 0.5f, 1.0f);
+    C2D_SpriteSetPos(&scoreboard_pointer->sprite, TOP_SCREEN_WIDTH / 2, TOP_SCREEN_HEIGHT - 100);
+    C2D_SpriteSetRotation(&scoreboard_pointer->sprite, C3D_Angle(0));
+}
+
 
 void prepare_block() {
     C2D_SpriteFromSheet(&block_pointer->sprite, block_spriteSheet, 0);
@@ -557,6 +582,10 @@ void draw_characters() {
     }
 }
 
+void draw_scoreboard() {
+    C2D_DrawSprite(&scoreboard.sprite);
+}
+
 void draw_scenery() {
     C2D_DrawSprite(&background.sprite);
     C2D_DrawSprite(&block.sprite);
@@ -588,8 +617,12 @@ void initGame() {
     prepare_goomba();
     prepare_toad();
     prepare_game_screen();
+	prepare_scoreboard();
 }
 
+void drawerBottomScreenController() {
+    draw_scoreboard();
+}
 
 void drawerTopScreenController() {
     draw_scenery();
@@ -673,7 +706,7 @@ void handleToadCollision() {
 void handleGoombaCollision() {
     if (goomba_pointer->alive && isInCollissionWithGoomba() && goomba_pointer->dy == GOOMBA_INITIAL_POS_Y) {
         if(mario_pointer->state != MarioState::walking && mario_pointer->state != MarioState::dead){
-            printf("Mario ha matado a Goomba!\n");
+            //printf("Mario ha matado a Goomba!\n");
             mario_pointer->dy = mario_pointer->dy - 5;
             coin_goomba_pointer->visible = true;
             coin_goomba_pointer->dx = goomba_pointer->dx;
@@ -681,7 +714,7 @@ void handleGoombaCollision() {
             goomba_pointer->current_sprite = GOOMBADEAD;
             controllerSprites_mario(sprite_id);
         } else {
-            printf("Mario ha sido asesinado por Goomba\n");
+            //printf("Mario ha sido asesinado por Goomba\n");
             mario_pointer->state = MarioState::dead;
             sprite_id = MARIODEAD;
         }			
@@ -769,7 +802,7 @@ int main(int argc, char *argv[]) {
     romfsInit();
     gfxInitDefault();
     //DEBUG
-    consoleInit(GFX_BOTTOM, NULL);
+    //consoleInit(GFX_BOTTOM, NULL);
 
     C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
     C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
@@ -781,7 +814,7 @@ int main(int argc, char *argv[]) {
     prepareSounds();
 
     C3D_RenderTarget *top_screen = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
-
+	C3D_RenderTarget *bottom_screen = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
     prepare_sprites();
 
     initGame();
@@ -820,8 +853,13 @@ int main(int argc, char *argv[]) {
         drawerTopScreenController();
 		
 		//gameInputController(kDown, kHeld);
+		
+        //printDebugData(kDown, kHeld);
+		C2D_TargetClear(bottom_screen, BLACK);
+		C2D_SceneBegin(bottom_screen);
 
-        printDebugData(kDown, kHeld);
+		//Drawer BOTTOM Sprites
+		drawerBottomScreenController();
 		
         //C2D_Flush();
 

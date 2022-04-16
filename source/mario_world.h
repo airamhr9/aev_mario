@@ -192,3 +192,7 @@ typedef struct {
     bool visible;
 } Title;
 
+typedef struct {
+    C2D_Sprite sprite;
+} Scoreboard;
+
