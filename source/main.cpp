@@ -638,7 +638,7 @@ void initGame() {
 
 void drawerBottomScreenController() {
 	draw_scoreboard();
-	if(title->pointer){
+	if(title_pointer->visible){
 		//Reseteamos la ventan de abajo con la puntuación
 	}else{
 		//Tenemos que refrescar la información que haya podido cambiar durante el frame
