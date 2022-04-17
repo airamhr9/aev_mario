@@ -621,7 +621,17 @@ void initGame() {
 }
 
 void drawerBottomScreenController() {
-    draw_scoreboard();
+	draw_scoreboard();
+	if(title->pointer){
+		//Reseteamos la ventan de abajo con la puntuación
+	}else{
+		//Tenemos que refrescar la información que haya podido cambiar durante el frame
+	}
+
+}
+
+void dynamic_scoreboard (){
+	
 }
 
 void drawerTopScreenController() {
@@ -876,3 +886,63 @@ int main(int argc, char *argv[]) {
 	gfxExit();
 	return 0;
 }
+
+
+
+/*
+void gameDrawersBottomScreenController(int game_sentinel)
+{
+	if (game_sentinel == START_GAMESTATE || game_sentinel == WIN_GAMESTATE || game_sentinel == LEVEL_UP_GAMESTATE || game_sentinel == GAMEOVER_GAMESTATE)
+	{
+		drawer_scoreboard_screen();
+		drawer_dynamic_score(FONT_SIZE);
+	}
+	else if (game_sentinel == PAUSED_GAMESTATE)
+	{
+		drawer_pause_screen();
+	}
+	else if (game_sentinel == MENU_GAMESTATE || game_sentinel == TOP_LIST_GAMESTATE || game_sentinel == INSTRUCTIONS_GAMESTATE || game_sentinel == CREDITS_GAMESTATE)
+	{
+		drawer_menu_screen();
+		drawer_boat_selector();
+	}
+}
+
+void drawer_dynamic_score(float size)
+{
+	// Clear the dynamic text buffer
+	C2D_TextBufClear(g_dynamicBuf);
+
+	// Generate and draw dynamic text
+	char buf[BUFFER_SIZE], buf2[BUFFER_SIZE], buf3[BUFFER_SIZE], buf4[BUFFER_SIZE], buf5[BUFFER_SIZE], buf6[BUFFER_SIZE];
+	C2D_Text dynText_lifes, dynText_points, dynText_levels, dynText_passengers, dynText_fuel, dynText_time;
+
+	snprintf(buf, sizeof(buf), " %d", lboat->lifes);
+	snprintf(buf2, sizeof(buf2), " %d", points);
+	snprintf(buf3, sizeof(buf3), " %d", level);
+	snprintf(buf5, sizeof(buf5), " %d", lboat->fuel);
+	snprintf(buf4, sizeof(buf4), "%d/3", lboat->seatcount);
+	snprintf(buf6, sizeof(buf6), " %s", time_buf);
+
+	C2D_TextParse(&dynText_lifes, g_dynamicBuf, buf);
+	C2D_TextParse(&dynText_points, g_dynamicBuf, buf2);
+	C2D_TextParse(&dynText_levels, g_dynamicBuf, buf3);
+	C2D_TextParse(&dynText_fuel, g_dynamicBuf, buf5);
+	C2D_TextParse(&dynText_passengers, g_dynamicBuf, buf4);
+	C2D_TextParse(&dynText_time, g_dynamicBuf, buf6);
+
+	C2D_TextOptimize(&dynText_lifes);
+	C2D_TextOptimize(&dynText_points);
+	C2D_TextOptimize(&dynText_levels);
+	C2D_TextOptimize(&dynText_fuel);
+	C2D_TextOptimize(&dynText_passengers);
+	C2D_TextOptimize(&dynText_time);
+
+	C2D_DrawText(&dynText_levels, C2D_AtBaseline | C2D_WithColor | C2D_AlignCenter, 90.0f, 116.0f, 0.5f, size, size, WHITE);
+	C2D_DrawText(&dynText_points, C2D_AtBaseline | C2D_WithColor | C2D_AlignCenter, 91.0f, 136.0f, 0.5f, size, size, WHITE);
+	C2D_DrawText(&dynText_lifes, C2D_AtBaseline | C2D_WithColor | C2D_AlignCenter, 268.0f, 115.0f, 0.5f, size, size, WHITE);
+	C2D_DrawText(&dynText_fuel, C2D_AtBaseline | C2D_WithColor | C2D_AlignCenter, 268.0f, 130.0f, 0.5f, size, size, WHITE);
+	C2D_DrawText(&dynText_passengers, C2D_AtBaseline | C2D_WithColor, 261.0f, 145.0f, 0.5f, size, size, WHITE);
+	C2D_DrawText(&dynText_time, C2D_AtBaseline | C2D_WithColor, 129.0f, 215.0f, 0.5f, size, size, WHITE);
+}
+*/
