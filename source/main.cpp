@@ -51,23 +51,16 @@ Coin *coin_goomba_pointer = &goomba.coin;
 Title *title_pointer = &title;
 Scoreboard *scoreboard_pointer = &scoreboard;
 
-
-int sprite_id = RIGHT_WALK_1;
 u64 start_loop_time = svcGetSystemTick();
 u64 now = svcGetSystemTick();
-u64 ms_elapsed_time = now - start_loop_time;
-static u64 sprite_refresh = 2800;
-static u64 max_jump = 65000000;
-u64 jump_start;
-bool can_jump = true;
 
 static CWAV* ost = (CWAV*) malloc(sizeof(CWAV));
 static CWAV* toadSound = (CWAV*) malloc(sizeof(CWAV));
 
-bool array_contains(int val, int array[], int* pos) {
+bool array_contains(int val, int array[], int* pos, int num_elems) {
     //printf("SIZE OF ARRAY IS %d\n", sizeof(array) / sizeof(array[0]));
      int i;
-    for(i = 0; i < WAlK_ANIMATION_SIZE; i++)
+    for(i = 0; i < num_elems; i++)
     {
         if(array[i] == val) {
 			*pos = i;
@@ -88,10 +81,10 @@ void controllerSprites_scoreboard()
 	C2D_DrawSprite(&scoreboard_pointer->sprite);
 }
 
-void controllerSprites_mario(int spriteid)
+void controllerSprites_mario()
 {
 	// Sprite
-	C2D_SpriteFromSheet(&mario_pointer->sprite, mario_spriteSheet, spriteid);
+	C2D_SpriteFromSheet(&mario_pointer->sprite, mario_spriteSheet, mario_pointer->current_sprite);
  	C2D_SpriteSetCenter(&mario_pointer->sprite, 0.f, 0.f);
 	C2D_SpriteSetPos(&mario_pointer->sprite, mario_pointer->dx, mario_pointer->dy);
 	C2D_SpriteSetRotationDegrees(&mario_pointer->sprite, 0); 
@@ -141,10 +134,10 @@ void controllerSprites_block()
 }
 
 bool isInCollissionWithBlock() {
-    bool colission = mario_pointer->dx >= BLOCK_INITIAL_POS_X - 25 
+    bool colission = mario_pointer->dx >= BLOCK_INITIAL_POS_X - mario_pointer->right_collision_margin 
     && mario_pointer->dx <= BLOCK_INITIAL_POS_X
-    && mario_pointer->dy <= BLOCK_INITIAL_POS_Y + 10
-    && mario_pointer->dy >= BLOCK_INITIAL_POS_Y - 10;
+    && mario_pointer->dy <= BLOCK_INITIAL_POS_Y + mario_pointer->top_collision_margin
+    && mario_pointer->dy >= BLOCK_INITIAL_POS_Y - mario_pointer->top_collision_margin;
     if (colission && block_pointer->current_sprite != BLOCK_TOUCHED) {
         block_pointer->current_sprite = BLOCK_TOUCHED;
         controllerSprites_block();
@@ -155,9 +148,9 @@ bool isInCollissionWithBlock() {
 
 //Solo comprueba si está en colisión desde el eje X, si lo hace desde falling (que se comprobará desde otro sitio) se mata al bicho y consigue una moneda
 bool isInCollissionWithGoomba() {
-    bool colission = mario_pointer->dx >= goomba_pointer-> dx - 23
-    && mario_pointer->dx <= goomba_pointer->dx + 1
-    && mario_pointer->dy + 45 >= goomba_pointer->dy;
+    bool colission = mario_pointer->dx >= goomba_pointer-> dx - mario_pointer->right_collision_margin
+    && mario_pointer->dx <= goomba_pointer->dx + mario_pointer->left_collision_margin
+    && mario_pointer->dy + mario_pointer->bottom_collision_margin >= goomba_pointer->dy;
     return colission;
 }
 
@@ -227,33 +220,34 @@ void marioPhysics() {
     float new_y = mario_pointer->dy;
     float new_x = mario_pointer->dx;
     now = svcGetSystemTick();
+    int pos;
 
     if (mario_pointer->state == MarioState::falling) {
         //printf("MARIO IS FALLING\n");
         new_y += mario_pointer->fall_speed;
 
-        if (mario_pointer->dy >= MARIO_INITIAL_POS_Y) {
+        if (mario_pointer->dy >= mario_pointer->base_y) {
 //        printf("MARIO SHOULD BE WALKING\n");
-            new_y = MARIO_INITIAL_POS_Y;
+            new_y = mario_pointer->base_y;
             mario_pointer->state = MarioState::walking;
-            if (sprite_id == FALL_LEFT || sprite_id == JUMP_LEFT) {
-                sprite_id = LEFT_WALK_1;
+            if (array_contains(mario_pointer->current_sprite, mario_pointer->left_jump_anim, &pos, 2)) {
+                mario_pointer->current_sprite = mario_pointer->left_walk_anim[0];
             } else {
-                sprite_id = RIGHT_WALK_1;
+                mario_pointer->current_sprite = mario_pointer->right_walk_anim[0];
             }
         }
-    } else if (mario_pointer->state == MarioState::jumping && (now - jump_start) >= max_jump) {
-        can_jump = false;
+    } else if (mario_pointer->state == MarioState::jumping && (now - mario_pointer->jump_start) >= mario_pointer->max_jump_time) {
+        mario_pointer->can_jump = false;
         mario_pointer->state = MarioState::falling;
-        if (sprite_id == JUMP_LEFT) {
-            sprite_id = FALL_LEFT;
+        if (mario_pointer->current_sprite == mario_pointer->left_jump_anim[JUMP_INDEX]) {
+            mario_pointer->current_sprite = mario_pointer->left_jump_anim[FALL_INDEX];
         } else {
-            sprite_id = FALL_RIGHT;
+            mario_pointer->current_sprite = mario_pointer->right_jump_anim[FALL_INDEX];
         }
     }
 
     C2D_SpriteMove(&mario_pointer->sprite, mario_pointer->dx = new_x, mario_pointer->dy = new_y);
-    controllerSprites_mario(sprite_id);
+    controllerSprites_mario();
 }
 
 bool isInDialogPos() {
@@ -266,25 +260,25 @@ void moveMario(u32 kHeld)
 {
 	int pos;
     now = svcGetSystemTick();
-    ms_elapsed_time += (now - start_loop_time);
+    mario_pointer->anim_elapsed_time += (now - start_loop_time);
     float new_y = mario_pointer->dy;
     float new_x = mario_pointer->dx;
     float speed;
 
 
-        if ((kHeld & KEY_A) && can_jump) {
+        if ((kHeld & KEY_A) && mario_pointer->can_jump) {
             if (mario_pointer->state == MarioState::walking) {
                 if (!isInDialogPos()) {
-                    jump_start = svcGetSystemTick();
+                    mario_pointer->jump_start = svcGetSystemTick();
                     mario_pointer->state = MarioState::jumping;
                     new_y -= mario_pointer->jump_speed;
 
-                    if (array_contains(sprite_id, rightWalk, &pos)) {
-                        //printf("CONTAINS %d in POS %d JUMP RIGHT\n", sprite_id, pos);
-                        sprite_id = JUMP_RIGHT;
+                    if (array_contains(mario_pointer->current_sprite, mario_pointer->right_walk_anim, &pos, mario_pointer->anim_num_sprites)) {
+                        //printf("CONTAINS %d in POS %d JUMP RIGHT\n", mario_pointer->current_sprite, pos);
+                        mario_pointer->current_sprite = mario_pointer->right_jump_anim[JUMP_INDEX];
                     } else {
-                        //printf("CONTAINS %d in POS %d JUMP LEFT\n", sprite_id, pos);
-                        sprite_id = JUMP_LEFT;
+                        //printf("CONTAINS %d in POS %d JUMP LEFT\n", mario_pointer->current_sprite, pos);
+                        mario_pointer->current_sprite = mario_pointer->left_jump_anim[JUMP_INDEX];
                     }
                 }  
             } else if (mario_pointer->state == MarioState::jumping) {
@@ -310,22 +304,22 @@ void moveMario(u32 kHeld)
         if (!isInCollissionWithBlock()) {
             new_x -= speed;
         }
-        if (ms_elapsed_time >= sprite_refresh) {
-		    if (array_contains(sprite_id, leftWalk, &pos)) {
-			    sprite_id = leftWalk[(pos + 1) % 3];
+        if (mario_pointer->anim_elapsed_time >= mario_pointer->sprite_refresh) {
+		    if (array_contains(mario_pointer->current_sprite, mario_pointer->left_walk_anim, &pos, mario_pointer->anim_num_sprites)) {
+			    mario_pointer->current_sprite = mario_pointer->left_walk_anim[(pos + 1) % mario_pointer->anim_num_sprites];
             //printf("ADVANCING LEFT\n");
-                ms_elapsed_time = 0;
+                mario_pointer->anim_elapsed_time = 0;
             } else {
             //printf("START TO LOOK LEFT\n");
                 switch(mario_pointer->state) {
                     case MarioState::walking: 
-			            sprite_id = LEFT_WALK_1;
+			            mario_pointer->current_sprite = mario_pointer->left_walk_anim[0];
                         break;
                     case MarioState::jumping:
-                        sprite_id = JUMP_LEFT;
+                        mario_pointer->current_sprite = mario_pointer->left_jump_anim[JUMP_INDEX];
                         break;
                     case MarioState::falling:
-                        sprite_id = FALL_LEFT;
+                        mario_pointer->current_sprite = mario_pointer->left_jump_anim[FALL_INDEX];
                         break;
                     case MarioState::dead:
                         break;
@@ -340,22 +334,22 @@ void moveMario(u32 kHeld)
         if (!isInCollissionWithBlock()) {
             new_x += speed;
         }
-        if (ms_elapsed_time >= sprite_refresh) {
-		    if (array_contains(sprite_id, rightWalk, &pos)) {
-			    sprite_id = rightWalk[(pos + 1) % 3];
-                ms_elapsed_time = 0;
+        if (mario_pointer->anim_elapsed_time >= mario_pointer->sprite_refresh) {
+		    if (array_contains(mario_pointer->current_sprite, mario_pointer->right_walk_anim, &pos, mario_pointer->anim_num_sprites)) {
+			    mario_pointer->current_sprite = mario_pointer->right_walk_anim[(pos + 1) % mario_pointer->anim_num_sprites];
+                mario_pointer->anim_elapsed_time = 0;
             //printf("ADVANCING RIGHT\n");
             } else {
                 switch(mario_pointer->state) {
              //                   printf("START TO LOOK RIGHT\n");
                     case MarioState::walking: 
-			            sprite_id = RIGHT_WALK_1;
+			            mario_pointer->current_sprite = mario_pointer->right_walk_anim[0];
                         break;
                     case MarioState::jumping:
-                        sprite_id = JUMP_RIGHT;
+                        mario_pointer->current_sprite = mario_pointer->right_jump_anim[JUMP_INDEX];
                         break;
                     case MarioState::falling:
-                        sprite_id = FALL_RIGHT;
+                        mario_pointer->current_sprite = mario_pointer->right_jump_anim[FALL_INDEX];
                         break;
                     case MarioState::dead:
                         break;
@@ -368,7 +362,7 @@ void moveMario(u32 kHeld)
 	if(new_x < -10.0) new_x = -10.0;
 	if(new_x > 366.0) new_x = 366.0;
     C2D_SpriteMove(&mario_pointer->sprite, mario_pointer->dx = new_x, mario_pointer->dy = new_y);
-    controllerSprites_mario(sprite_id);
+    controllerSprites_mario();
 }
 
 void setIdleMario(int kUp) {
@@ -376,19 +370,19 @@ void setIdleMario(int kUp) {
         if (mario_pointer->state == MarioState::jumping) {
             mario_pointer->state = MarioState::falling;
         }
-        can_jump = true;
+        mario_pointer->can_jump = true;
     }
     int pos = -1;
     if (mario_pointer->state == MarioState::walking) {
-        if (array_contains(sprite_id, rightWalk, &pos)) {
+        if (array_contains(mario_pointer->current_sprite, mario_pointer->right_walk_anim, &pos, mario_pointer->anim_num_sprites)) {
             //printf("AQUI RIGHT WALK EN KEY UP\n");
-            sprite_id = RIGHT_WALK_1;
+            mario_pointer->current_sprite = mario_pointer->right_walk_anim[0];
         } else {
-            //printf("AQUI LEFT WALK EN KEY UP sprite id %d  POS %d\n", sprite_id, pos);
-            sprite_id = LEFT_WALK_1;
+            //printf("AQUI LEFT WALK EN KEY UP sprite id %d  POS %d\n", mario_pointer->current_sprite, pos);
+            mario_pointer->current_sprite = mario_pointer->left_walk_anim[0];
         }
     }
-    controllerSprites_mario(sprite_id);
+    controllerSprites_mario();
 }
 
 void prepare_sprites() {
@@ -441,21 +435,43 @@ void prepare_sprites() {
     }
 }
 
-void prepare_mario(int posX, int posY) {
-    C2D_SpriteFromSheet(&mario_pointer->sprite, mario_spriteSheet, 4);
-    C2D_SpriteSetCenter(&mario_pointer->sprite, 0.f, 0.f);
-    C2D_SpriteSetPos(&mario_pointer->sprite, posX, posY);
-    C2D_SpriteSetRotation(&mario_pointer->sprite,C3D_Angle(0));
+void setDefaultMarioValues() {
     mario_pointer->alive = true;
-    mario_pointer->dx = posX;
-    mario_pointer->dy = posY;
+    mario_pointer->base_y = MARIO_INITIAL_POS_Y;
+    mario_pointer->dx = MARIO_INITIAL_POS_X;
+    mario_pointer->dy = MARIO_INITIAL_POS_Y;
     mario_pointer->speed = MARIO_SPEED;
     mario_pointer->air_speed = MARIO_AIR_SPEED;
     mario_pointer->jump_speed = MARIO_JUMP_SPEED;
     mario_pointer->fall_speed = MARIO_FALL_SPEED;
     mario_pointer->state = MarioState::walking;
+    mario_pointer->anim_elapsed_time = 0;
     mario_pointer->dead_elapsed_time = 0;
+    mario_pointer->current_sprite = RIGHT_WALK_1;
     mario_pointer->upwards_dead_anim_delay = MARIO_UPWARDS_DEAD_DELAY;
+    mario_pointer->sprite_refresh = SPRITE_REFRESH;
+    mario_pointer->max_jump_time = BIG_JUMP;
+    mario_pointer->can_jump = true;
+    mario_pointer->left_walk_anim = leftWalk;
+    mario_pointer->right_walk_anim = rightWalk;
+    mario_pointer->right_jump_anim = jumpRightAnim;
+    mario_pointer->left_jump_anim = jumpLeftAnim;
+    mario_pointer->anim_num_sprites = WAlK_ANIMATION_SIZE;
+    mario_pointer->small = false;
+    mario_pointer->right_collision_margin = 25;
+    mario_pointer->bottom_collision_margin = 30;
+    mario_pointer->left_collision_margin = 1;
+    mario_pointer->top_collision_margin = 10;
+    mario_pointer->small_invincibility = INVINCIBILITY_TIME;
+    mario_pointer->invincibility_elapsed_ms = 0;
+}
+
+void prepare_mario(int posX, int posY) {
+    C2D_SpriteFromSheet(&mario_pointer->sprite, mario_spriteSheet, 4);
+    C2D_SpriteSetCenter(&mario_pointer->sprite, 0.f, 0.f);
+    C2D_SpriteSetPos(&mario_pointer->sprite, posX, posY);
+    C2D_SpriteSetRotation(&mario_pointer->sprite,C3D_Angle(0));
+    setDefaultMarioValues();
 }
 
 void prepare_game_screen() {
@@ -663,13 +679,9 @@ void hideTitle(u32 kDown) {
 }
 
 void restart() {
-    mario_pointer->dx = MARIO_INITIAL_POS_X;
-    mario_pointer->dy = MARIO_INITIAL_POS_Y;
     block_pointer->current_sprite = BLOCK_UNTOUCHED;
-    mario_pointer->state = MarioState::walking;
-    mario_pointer->dead_elapsed_time = 0;
-    mario_pointer->alive = true;
     title_pointer->visible = true;
+    setDefaultMarioValues();
 }
 
 void handleMarioDead() {
@@ -686,7 +698,7 @@ void handleMarioDead() {
         }
     }
 
-    controllerSprites_mario(sprite_id);
+    controllerSprites_mario();
 }
 
 void gameInputController(u32 kDown, u32 kHeld, u32 kUp) {
@@ -713,7 +725,28 @@ void handleToadCollision() {
     }
 }
 
+void makeMarioSmall() {
+    mario_pointer->current_sprite = SMALL_RIGHT_IDLE;
+    mario_pointer->left_walk_anim = smallLeftWalk;
+    mario_pointer->max_jump_time = SMALL_JUMP;
+    mario_pointer->base_y = MARIO_SMALL_Y;
+    mario_pointer->right_walk_anim = smallRightWalk;
+    mario_pointer->anim_num_sprites = SMALL_WAlK_ANIMATION_SIZE;
+    mario_pointer->dy = MARIO_SMALL_Y;
+    mario_pointer->left_jump_anim = smallJumpLeftAnim;
+    mario_pointer->right_jump_anim = smallJumpRightAnim;
+    mario_pointer->right_collision_margin = 15;
+    mario_pointer->bottom_collision_margin = 30;
+    mario_pointer->left_collision_margin = 10;
+    mario_pointer->top_collision_margin = 15;
+    mario_pointer->sprite_refresh = 3800;
+    mario_pointer->small = true;
+}
+
+
 void handleGoombaCollision() {
+    u64 now_collission = svcGetSystemTick();
+
     if (goomba_pointer->alive && isInCollissionWithGoomba() && goomba_pointer->dy == GOOMBA_INITIAL_POS_Y) {
         if(mario_pointer->state != MarioState::walking && mario_pointer->state != MarioState::dead){
             //printf("Mario ha matado a Goomba!\n");
@@ -722,13 +755,24 @@ void handleGoombaCollision() {
             coin_goomba_pointer->dx = goomba_pointer->dx;
             coin_goomba_pointer->dy = goomba_pointer->dy;
             goomba_pointer->current_sprite = GOOMBADEAD;
-            controllerSprites_mario(sprite_id);
         } else {
             //printf("Mario ha sido asesinado por Goomba\n");
-            mario_pointer->state = MarioState::dead;
-            sprite_id = MARIODEAD;
+            if (mario_pointer->small) {
+
+                mario_pointer->invincibility_elapsed_ms += (now_collission - start_loop_time);
+
+                if (mario_pointer->invincibility_elapsed_ms >= mario_pointer->small_invincibility) {
+                    mario_pointer->state = MarioState::dead;
+                    mario_pointer->current_sprite = MARIODEAD;
+                }
+
+            } else {    
+                makeMarioSmall();
+            }
         }			
     }
+    
+    controllerSprites_mario();
 }
 
 
@@ -741,30 +785,6 @@ void handleCollisions() {
  ***********DEBUG************
  ***************************/
 void printDebugData(u32 kDown, u32 kHeld) {
-
-    int pos;
-    //printf("ARRAY CONTAINS 8 ???? %d\n", array_contains(8, rightWalk, &pos));
-
-/*     consoleClear();
-    int pos;
-    printf("IS LEFTWALK 1 %d  in rightWalk? %d\n", LEFT_WALK_1, array_contains(LEFT_WALK_1, rightWalk, &pos));
-    printf("IS LEFTWALK 2 %d  in rightWalk? %d\n", LEFT_WALK_2, array_contains(LEFT_WALK_2, rightWalk, &pos));
-    printf("IS LEFTWALK 3 %d  in rightWalk? %d\n", LEFT_WALK_3, array_contains(LEFT_WALK_3, rightWalk, &pos));
-    printf("IS RIGHTWALK 1 %d  in leftWalk? %d\n", RIGHT_WALK_1, array_contains(RIGHT_WALK_1, leftWalk, &pos));
-    printf("IS RIGHTWALK 2 %d  in leftWalk? %d\n", RIGHT_WALK_2, array_contains(RIGHT_WALK_2, leftWalk, &pos));
-    printf("IS RIGHTWALK 3 %d  in leftWalk? %d\n", RIGHT_WALK_3, array_contains(RIGHT_WALK_3, leftWalk, &pos));  */
-
-
-/*     printf("\nLEFTWALK\n ---------------------- \n[");
-    for (int i = 0; i < sizeof(leftWalk); i++) {
-        printf("%d, ", leftWalk[i]);
-    }
-    printf("]\n\n\n");
-    printf("RIGHTWALK\n ---------------------- \n[");
-    for (int i = 0; i < sizeof(rightWalk); i++) {
-        printf("%d, ", rightWalk[i]);
-    }
-    printf("]\n"); */
 }
 
 void prepareSound(char* soundPath, CWAV* cwav) {

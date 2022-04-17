@@ -9,6 +9,8 @@
 #define FPS (268123480/60)
 
 // Mario constants
+#define JUMP_INDEX 0
+#define FALL_INDEX 1
 #define MARIO_SPEED 3.2
 #define MARIO_JUMP_SPEED 4.8
 #define MARIO_AIR_SPEED 2.8
@@ -16,7 +18,13 @@
 #define MARIO_INITIAL_POS_Y 173
 #define MARIO_INITIAL_POS_X 10
 #define WAlK_ANIMATION_SIZE 3
+#define SMALL_WAlK_ANIMATION_SIZE 2
 #define MARIO_UPWARDS_DEAD_DELAY 15000
+#define BIG_JUMP 65000000
+#define SMALL_JUMP 70000000
+#define MARIO_SMALL_Y 190
+#define SPRITE_REFRESH 2800
+#define INVINCIBILITY_TIME 40000
 enum Mario_Sprites {
 	LEFT_WALK_2,
     LEFT_WALK_3,
@@ -48,9 +56,41 @@ enum Mario_Sprites {
     EQUILIBRIUM_RIGHT_1,
     FLY_RIGHT,
     UNKNOWN_2,
-    MARIODEAD
+    MARIODEAD,
+    SMALL_RIGHT_FALL,
+    SMALL_RIGHT_IDLE,
+    SMALL_RIGHT_JUMP,
+    SMALL_RIGHT_WALK,
+    SMALL_LEFT_FALL,
+    SMALL_LEFT_IDLE,
+    SMALL_LEFT_JUMP,
+    SMALL_LEFT_WALK
 };
 
+int jumpRightAnim[] =  {
+    JUMP_RIGHT,
+    FALL_RIGHT
+};
+int jumpLeftAnim[] =  {
+    JUMP_LEFT,
+    FALL_LEFT
+};
+int smallJumpRightAnim[] =  {
+    SMALL_RIGHT_JUMP,
+    SMALL_RIGHT_FALL
+};
+int smallJumpLeftAnim[] =  {
+    SMALL_LEFT_JUMP,
+    SMALL_LEFT_FALL
+};
+int smallRightWalk[] = {
+    SMALL_RIGHT_IDLE,
+    SMALL_RIGHT_WALK,
+};
+int smallLeftWalk[] = {
+    SMALL_LEFT_IDLE,
+    SMALL_LEFT_WALK
+};
 int rightWalk[] = {
     RIGHT_WALK_1,
     RIGHT_WALK_2,
@@ -74,13 +114,32 @@ enum MarioState {
 typedef struct {
     /* data */
     float dx, dy; 
+    float base_y;
     float speed;
     float air_speed;
     bool alive;
     float jump_speed;
     float fall_speed;
+    int current_sprite;
+    float anim_elapsed_time;
     float upwards_dead_anim_delay;
     float dead_elapsed_time;
+    int max_jump_time;
+    int sprite_refresh;
+    bool small;
+    bool can_jump;
+    int* left_walk_anim;
+    int* right_walk_anim;
+    int anim_num_sprites;
+    int* left_jump_anim;
+    int* right_jump_anim;
+    int right_collision_margin;
+    int bottom_collision_margin;
+    int left_collision_margin;
+    int top_collision_margin;
+    u64 jump_start;
+    u64 small_invincibility;
+    u64 invincibility_elapsed_ms;
     C2D_Sprite sprite;
     MarioState state;
 } Mario;
