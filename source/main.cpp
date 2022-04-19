@@ -40,6 +40,8 @@ static C2D_SpriteSheet coin_spriteSheet;
 static C2D_SpriteSheet title_spriteSheet;
 static C2D_SpriteSheet scoreboard_spriteSheet;
 
+bool finished=false;
+
 Mario *mario_pointer = &mario;
 Toad *toad_pointer = &toad;
 ToadText *toadText_pointer = &toadText;
@@ -66,12 +68,6 @@ void initTimeState() {
 void advanceTimeState()
 {
     timeState.current_seconds = (svcGetSystemTick() - timeState.initial_time) / (CPU_TICKS_PER_MSEC * 1000);
-	/*time(&current_epoch_time);
-	game_time = current_epoch_time - initial_second;
-	ts = *localtime(&game_time);
-	strftime(time_buf, sizeof(time_buf), "%H:%M:%S", &ts);
-	*/
-	
 }
 
 bool array_contains(int val, int array[], int* pos, int num_elems) {
@@ -674,12 +670,11 @@ void dynamic_scoreboard() {
 	C2D_TextOptimize(&dynText_lifes);
 	C2D_TextOptimize(&dynText_coins);
 	C2D_TextOptimize(&dynText_time);
-	int size = 100;
+	
 	C2D_DrawText(&dynText_coins,  C2D_AlignLeft | C2D_WithColor, 50.0f, 20.0f, 0.5f, 0.5f, 0.5f, C2D_Color32f(1, 1, 1, 1));
 	C2D_DrawText(&dynText_lifes,  C2D_AlignLeft | C2D_WithColor, 50.0f, 40.0f, 0.5f, 0.5f, 0.5f, C2D_Color32f(1, 1, 1, 1));
 	C2D_DrawText(&dynText_time, C2D_AlignLeft | C2D_WithColor, 50.0f, 60.0f, 0.5f, 0.5f, 0.5f, C2D_Color32f(1, 1, 1, 1));
-/* 	printf("número de monedas: %d", mario_pointer->coins);
-	printf("número de vidas: %d", mario_pointer->lifes);  */
+
 	
 }
 
@@ -704,6 +699,7 @@ void manageKeyPress(u32 kDown) {
     if ((kDown & KEY_A) && isInDialogPos()){
         if (toadText_pointer->visible) {
             toadText_pointer->visible = false;
+			finished=true;
         } else {
             toadText_pointer->visible = true;
             cwavPlay(toadSound, 0, -1);
@@ -935,6 +931,10 @@ int main(int argc, char *argv[]) {
         //C2D_Flush();
 
         C3D_FrameEnd(0);
+		
+		if(finished){
+			//Código para la ventana de reiniicar el juego y créditos
+		}
 
 
         //if (now_time < last_time + FPS) svcSleepThread (last_time + FPS - now_time);
