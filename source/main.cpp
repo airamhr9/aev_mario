@@ -777,6 +777,7 @@ void makeMarioSmall() {
     mario_pointer->top_collision_margin = 15;
     mario_pointer->sprite_refresh = 3800;
     mario_pointer->small = true;
+	mario_pointer->lifes = 1;
 }
 
 
@@ -785,7 +786,7 @@ void handleGoombaCollision() {
 
     if (goomba_pointer->alive && isInCollissionWithGoomba() && goomba_pointer->dy == GOOMBA_INITIAL_POS_Y) {
         if(mario_pointer->state != MarioState::walking && mario_pointer->state != MarioState::dead){
-            printf("Mario ha matado a Goomba!\n");
+            //printf("Mario ha matado a Goomba!\n");
             mario_pointer->dy = mario_pointer->dy - 5;
             coin_goomba_pointer->visible = true;
             coin_goomba_pointer->dx = goomba_pointer->dx;
@@ -933,7 +934,7 @@ int main(int argc, char *argv[]) {
         C3D_FrameEnd(0);
 		
 		if(finished){
-			//Código para la ventana de reiniicar el juego y créditos
+			//Código para la ventana de reiniicar el juego y créditos	
 		}
 
 
