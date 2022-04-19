@@ -7,6 +7,8 @@
 #define BOTTOM_SCREEN_HEIGHT 240
 
 #define FPS (268123480/60)
+#define BUFFER_SIZE 160
+#define TIME_BUFFER_SIZE 80
 
 // Mario constants
 #define JUMP_INDEX 0
