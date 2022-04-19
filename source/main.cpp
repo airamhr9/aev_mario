@@ -69,11 +69,12 @@ void gameTimeController(bool reset)
 		coins = 0;
 		game_time = 0;
 		initial_second = 0;
-	}else {
-		time(&current_epoch_time);
+	}else{
+		/*time(&current_epoch_time);
 		game_time = current_epoch_time - initial_second;
 		ts = *localtime(&game_time);
 		strftime(time_buf, sizeof(time_buf), "%H:%M:%S", &ts);
+		*/
 	}
 }
 
@@ -671,19 +672,21 @@ void dynamic_scoreboard (){
 	}
 	snprintf(buf, sizeof(buf), " %d", lifes);
 	snprintf(buf2, sizeof(buf2), " %d", coins);
-	snprintf(buf3, sizeof(buf3), " %s", time_buf);
+	//snprintf(buf3, sizeof(buf3), " %s", time_buf);
 
 	C2D_TextParse(&dynText_lifes, g_dynamicBuf, buf);
 	C2D_TextParse(&dynText_coins, g_dynamicBuf, buf2);
-	C2D_TextParse(&dynText_time, g_dynamicBuf, buf3);
+	//C2D_TextParse(&dynText_time, g_dynamicBuf, buf3);
 
 	C2D_TextOptimize(&dynText_lifes);
 	C2D_TextOptimize(&dynText_coins);
-	C2D_TextOptimize(&dynText_time);
+	//C2D_TextOptimize(&dynText_time);
 	int size = 100;
 	C2D_DrawText(&dynText_coins, C2D_AtBaseline | C2D_WithColor | C2D_AlignCenter, 91.0f, 136.0f, 0.5f, size, size, 0);
 	C2D_DrawText(&dynText_lifes, C2D_AtBaseline | C2D_WithColor | C2D_AlignCenter, 268.0f, 115.0f, 0.5f, size, size, 0);
-	C2D_DrawText(&dynText_time, C2D_AtBaseline | C2D_WithColor, 129.0f, 215.0f, 0.5f, size, size, 0);
+	//C2D_DrawText(&dynText_time, C2D_AtBaseline | C2D_WithColor, 129.0f, 215.0f, 0.5f, size, size, 0);
+	printf("número de monedas: %d", coins);
+	printf("número de vidas: %d", lifes);
 	
 }
 
@@ -793,7 +796,7 @@ void handleGoombaCollision() {
 
     if (goomba_pointer->alive && isInCollissionWithGoomba() && goomba_pointer->dy == GOOMBA_INITIAL_POS_Y) {
         if(mario_pointer->state != MarioState::walking && mario_pointer->state != MarioState::dead){
-            //printf("Mario ha matado a Goomba!\n");
+            printf("Mario ha matado a Goomba!\n");
             mario_pointer->dy = mario_pointer->dy - 5;
             coin_goomba_pointer->visible = true;
             coin_goomba_pointer->dx = goomba_pointer->dx;
@@ -914,13 +917,13 @@ int main(int argc, char *argv[]) {
         u32 kUp = hidKeysUp();
 		
         if (title_pointer->visible) {
-			//gameTimeController(1);
+			gameTimeController(1);
             hideTitle(kDown);
         } else {
 			if (initial_second==0){
 				initial_second = time(&current_epoch_time);
 			}
-			//gameTimeController(0);
+			gameTimeController(0);
             characterAnimations();
             marioPhysics();
             gameInputController(kDown, kHeld, kUp);
