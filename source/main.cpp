@@ -16,9 +16,6 @@
 
 /* C2D_Text Declaration Variables */
 C2D_TextBuf g_dynamicBuf; // Buffer Declaratation
-char time_buf[TIME_BUFFER_SIZE];	  //Buffer Convert from epoch to human-readable date
-struct tm ts;
-time_t game_time, initial_second, current_epoch_time;
 
 static Mario mario;
 static Background background;
@@ -30,8 +27,8 @@ static Button button_title;
 static Block block;
 static Title title;
 static Scoreboard scoreboard;
+static TimeState timeState;
 
-int lifes, coins;
 static C2D_SpriteSheet mario_spriteSheet;
 static C2D_SpriteSheet background_spriteSheet;
 static C2D_SpriteSheet block_spriteSheet;
@@ -61,21 +58,20 @@ u64 now = svcGetSystemTick();
 static CWAV* ost = (CWAV*) malloc(sizeof(CWAV));
 static CWAV* toadSound = (CWAV*) malloc(sizeof(CWAV));
 
+void initTimeState() {
+    timeState.initial_time = svcGetSystemTick();
+    timeState.current_seconds = 0;
+}
 
-void gameTimeController(bool reset)
+void advanceTimeState()
 {
-	if (reset){
-		lifes = 2;
-		coins = 0;
-		game_time = 0;
-		initial_second = 0;
-	}else{
-		/*time(&current_epoch_time);
-		game_time = current_epoch_time - initial_second;
-		ts = *localtime(&game_time);
-		strftime(time_buf, sizeof(time_buf), "%H:%M:%S", &ts);
-		*/
-	}
+    timeState.current_seconds = (svcGetSystemTick() - timeState.initial_time) / (CPU_TICKS_PER_MSEC * 1000);
+	/*time(&current_epoch_time);
+	game_time = current_epoch_time - initial_second;
+	ts = *localtime(&game_time);
+	strftime(time_buf, sizeof(time_buf), "%H:%M:%S", &ts);
+	*/
+	
 }
 
 bool array_contains(int val, int array[], int* pos, int num_elems) {
@@ -212,13 +208,12 @@ void characterAnimations() {
     }
 
     if (coin_block_pointer->visible) {
-		coins +=1;
         coin_block_pointer->elapsed_time += (chars_now - start_loop_time);
         if (coin_block_pointer->elapsed_time <= coin_block_pointer->animation_time) {
             coin_block_pointer->dy -= 3;
         } else {
             coin_block_pointer->visible = false;
-			coins +=1;
+			mario_pointer->coins +=1;
             //Sumar contador monedas
         }
     }
@@ -229,7 +224,7 @@ void characterAnimations() {
             coin_goomba_pointer->dy -= 3;
         } else {
             coin_goomba_pointer->visible = false;
-			coins +=1;
+			mario_pointer->coins +=1;
             //Sumar contador monedas
         }
     }
@@ -488,6 +483,8 @@ void setDefaultMarioValues() {
     mario_pointer->top_collision_margin = 10;
     mario_pointer->small_invincibility = INVINCIBILITY_TIME;
     mario_pointer->invincibility_elapsed_ms = 0;
+    mario_pointer->lifes = 2;
+    mario_pointer->coins = 0;
 }
 
 void prepare_mario(int posX, int posY) {
@@ -660,40 +657,35 @@ void initGame() {
 	prepare_scoreboard();
 }
 
-void dynamic_scoreboard (){
-	char buf[BUFFER_SIZE], buf2[BUFFER_SIZE], buf3[BUFFER_SIZE];
-	C2D_Text dynText_lifes, dynText_coins, dynText_time;
-	if(mario_pointer->small && mario_pointer->alive){
-		lifes = 1;
-	} else if (mario_pointer->alive){
-		lifes = 2;
-	} else {
-		lifes = 0;
-	}
-	snprintf(buf, sizeof(buf), " %d", lifes);
-	snprintf(buf2, sizeof(buf2), " %d", coins);
-	//snprintf(buf3, sizeof(buf3), " %s", time_buf);
+void dynamic_scoreboard() {
+	C2D_TextBufClear(g_dynamicBuf);
 
-	C2D_TextParse(&dynText_lifes, g_dynamicBuf, buf);
-	C2D_TextParse(&dynText_coins, g_dynamicBuf, buf2);
-	//C2D_TextParse(&dynText_time, g_dynamicBuf, buf3);
+ 	char lifesBuffer[BUFFER_SIZE], coinsBuffer[BUFFER_SIZE], timeBuffer[BUFFER_SIZE];
+	C2D_Text dynText_lifes, dynText_coins, dynText_time;
+
+	snprintf(lifesBuffer, sizeof(lifesBuffer), "LIFES: %d", mario_pointer->lifes);
+	snprintf(coinsBuffer, sizeof(coinsBuffer), "COINS: %d", mario_pointer->coins);
+	snprintf(timeBuffer, sizeof(timeBuffer), "TIME: %llu s", timeState.current_seconds);
+
+	C2D_TextParse(&dynText_lifes, g_dynamicBuf, lifesBuffer);
+	C2D_TextParse(&dynText_coins, g_dynamicBuf, coinsBuffer);
+	C2D_TextParse(&dynText_time, g_dynamicBuf, timeBuffer);
 
 	C2D_TextOptimize(&dynText_lifes);
 	C2D_TextOptimize(&dynText_coins);
-	//C2D_TextOptimize(&dynText_time);
+	C2D_TextOptimize(&dynText_time);
 	int size = 100;
-	C2D_DrawText(&dynText_coins, C2D_AtBaseline | C2D_WithColor | C2D_AlignCenter, 91.0f, 136.0f, 0.5f, size, size, 0);
-	C2D_DrawText(&dynText_lifes, C2D_AtBaseline | C2D_WithColor | C2D_AlignCenter, 268.0f, 115.0f, 0.5f, size, size, 0);
-	//C2D_DrawText(&dynText_time, C2D_AtBaseline | C2D_WithColor, 129.0f, 215.0f, 0.5f, size, size, 0);
-	printf("número de monedas: %d", coins);
-	printf("número de vidas: %d", lifes);
+	C2D_DrawText(&dynText_coins,  C2D_AlignLeft | C2D_WithColor, 50.0f, 20.0f, 0.5f, 0.5f, 0.5f, C2D_Color32f(1, 1, 1, 1));
+	C2D_DrawText(&dynText_lifes,  C2D_AlignLeft | C2D_WithColor, 50.0f, 40.0f, 0.5f, 0.5f, 0.5f, C2D_Color32f(1, 1, 1, 1));
+	C2D_DrawText(&dynText_time, C2D_AlignLeft | C2D_WithColor, 50.0f, 60.0f, 0.5f, 0.5f, 0.5f, C2D_Color32f(1, 1, 1, 1));
+/* 	printf("número de monedas: %d", mario_pointer->coins);
+	printf("número de vidas: %d", mario_pointer->lifes);  */
 	
 }
 
 void drawerBottomScreenController() {
 	draw_scoreboard();
 	dynamic_scoreboard();
-
 }
 
 
@@ -719,9 +711,10 @@ void manageKeyPress(u32 kDown) {
     }
 }
 
-void hideTitle(u32 kDown) {
+void menuController(u32 kDown) {
     if (kDown & KEY_A) {
         title_pointer->visible = false;
+        initTimeState();
     }
 }
 
@@ -897,9 +890,6 @@ int main(int argc, char *argv[]) {
     initGame();
 
     sceneInit();
-	
-	lifes = 2;
-	coins = 0;
 
     while(aptMainLoop()) {
         //last_time = svcGetSystemTick ();
@@ -917,13 +907,9 @@ int main(int argc, char *argv[]) {
         u32 kUp = hidKeysUp();
 		
         if (title_pointer->visible) {
-			gameTimeController(1);
-            hideTitle(kDown);
+            menuController(kDown);
         } else {
-			if (initial_second==0){
-				initial_second = time(&current_epoch_time);
-			}
-			gameTimeController(0);
+			advanceTimeState();
             characterAnimations();
             marioPhysics();
             gameInputController(kDown, kHeld, kUp);

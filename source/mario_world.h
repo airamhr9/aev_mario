@@ -139,6 +139,8 @@ typedef struct {
     int bottom_collision_margin;
     int left_collision_margin;
     int top_collision_margin;
+    int lifes;
+    int coins;
     u64 jump_start;
     u64 small_invincibility;
     u64 invincibility_elapsed_ms;
@@ -252,8 +254,15 @@ typedef struct {
     C2D_Sprite sprite;
     bool visible;
 } Title;
-
+ 
 typedef struct {
     C2D_Sprite sprite;
 } Scoreboard;
 
+#define RESET true
+#define GAMETIME false
+
+typedef struct {
+    u64 initial_time;
+    u64 current_seconds;
+} TimeState;
