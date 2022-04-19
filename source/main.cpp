@@ -497,7 +497,7 @@ void prepare_title() {
 void prepare_scoreboard() {
     C2D_SpriteFromSheet(&scoreboard_pointer->sprite, scoreboard_spriteSheet,0);
     C2D_SpriteSetCenter(&scoreboard_pointer->sprite, 0.5f, 1.0f);
-    C2D_SpriteSetPos(&scoreboard_pointer->sprite, TOP_SCREEN_WIDTH / 2, TOP_SCREEN_HEIGHT - 100);
+    C2D_SpriteSetPos(&scoreboard_pointer->sprite, BOTTOM_SCREEN_WIDTH / 2, BOTTOM_SCREEN_HEIGHT - 100);
     C2D_SpriteSetRotation(&scoreboard_pointer->sprite, C3D_Angle(0));
 }
 
@@ -638,11 +638,11 @@ void initGame() {
 
 void drawerBottomScreenController() {
 	draw_scoreboard();
-	if(title_pointer->visible){
+	//if(title_pointer->visible){
 		//Reseteamos la ventan de abajo con la puntuación
-	}else{
+	//}else{
 		//Tenemos que refrescar la información que haya podido cambiar durante el frame
-	}
+	//}
 
 }
 
