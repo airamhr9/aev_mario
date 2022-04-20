@@ -261,6 +261,7 @@ typedef struct {
 
 typedef struct {
     C2D_Sprite sprite;
+	bool visible;
 } Credits;
 
 #define RESET true

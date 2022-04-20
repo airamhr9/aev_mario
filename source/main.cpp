@@ -42,8 +42,6 @@ static C2D_SpriteSheet title_spriteSheet;
 static C2D_SpriteSheet scoreboard_spriteSheet;
 static C2D_SpriteSheet credits_spriteSheet;
 
-bool finished=false;
-
 Mario *mario_pointer = &mario;
 Toad *toad_pointer = &toad;
 ToadText *toadText_pointer = &toadText;
@@ -222,7 +220,6 @@ void characterAnimations() {
         } else {
             coin_block_pointer->visible = false;
 			mario_pointer->coins +=1;
-            //Sumar contador monedas
         }
     }
 
@@ -233,7 +230,6 @@ void characterAnimations() {
         } else {
             coin_goomba_pointer->visible = false;
 			mario_pointer->coins +=1;
-            //Sumar contador monedas
         }
     }
     
@@ -414,7 +410,7 @@ void setIdleMario(int kUp) {
 
 void prepare_sprites() {
 	
-	credits_spriteSheet = C2D_SpriteSheetLoad("romfs:/gfx/credits.t3x");
+	credits_spriteSheet = C2D_SpriteSheetLoad("romfs:/gfx/end.t3x");
     if (!credits_spriteSheet) {
         svcBreak(USERBREAK_PANIC);
     }
@@ -561,7 +557,7 @@ void prepare_title() {
 void prepare_credits() {
     C2D_SpriteFromSheet(&credits_pointer->sprite, credits_spriteSheet,0);
     C2D_SpriteSetCenter(&credits_pointer->sprite, 0.5f, 1.0f);
-    C2D_SpriteSetPos(&credits_pointer->sprite, TOP_SCREEN_WIDTH / 2, TOP_SCREEN_HEIGHT - 100);
+    C2D_SpriteSetPos(&credits_pointer->sprite, TOP_SCREEN_WIDTH / 2, TOP_SCREEN_HEIGHT);
     C2D_SpriteSetRotation(&credits_pointer->sprite, C3D_Angle(0));
 }
 
@@ -747,13 +743,14 @@ void drawerBottomScreenController() {
 
 void drawerTopScreenController() {
     draw_scenery();
-
-    if (title_pointer->visible) {
-        draw_title();
-    } else {
-        draw_characters();
-        draw_mario();
-    }
+	if(credits_pointer->visible){
+		draw_credits();
+	} else if (title_pointer->visible) {
+		draw_title();
+	} else {
+		draw_characters();
+		draw_mario();
+	}
 }
 
 void menuController(u32 kDown) {
@@ -765,7 +762,8 @@ void menuController(u32 kDown) {
 
 void restart() {
     block_pointer->current_sprite = BLOCK_UNTOUCHED;
-    title_pointer->visible = true;
+	credits_pointer->visible = false;
+	title_pointer->visible = true;
     setDefaultMarioValues();
 	setDefaultGoombaValues();
 }
@@ -775,16 +773,18 @@ void manageKeyPress(u32 kDown) {
         if (toadText_pointer->visible) {
             toadText_pointer->visible = false;
 			if(mario_pointer->coins == 2){
-				draw_credits();
-				finished = true;
+				credits_pointer->visible = true;
 				}
         } else {
             toadText_pointer->visible = true;
             cwavPlay(toadSound, 0, -1);
         }
     }
-	if ((kDown & KEY_A) && finished){
-		finished = false;
+}
+
+void manageCredits(u32 kDown) {
+	if (kDown & KEY_A){
+		draw_credits();
 		restart();
 	}
 }
@@ -847,6 +847,7 @@ void makeMarioSmall() {
     mario_pointer->top_collision_margin = 15;
     mario_pointer->sprite_refresh = 3800;
     mario_pointer->small = true;
+	mario_pointer->lifes = 1;
 }
 
 
@@ -971,17 +972,16 @@ int main(int argc, char *argv[]) {
 		u32 kDown = hidKeysDown();
 		u32 kHeld = hidKeysHeld();
         u32 kUp = hidKeysUp();
-		
-        if (title_pointer->visible) {
-            menuController(kDown);
-        } else {
-			if (!finished)
-				advanceTimeState();
-            characterAnimations();
-            marioPhysics();
-            gameInputController(kDown, kHeld, kUp);
-            handleCollisions();
-        }
+		if (credits_pointer->visible){
+			manageCredits(kDown);
+		} else if (title_pointer->visible) {
+			menuController(kDown);
+		} else {
+			characterAnimations();
+			marioPhysics();
+			gameInputController(kDown, kHeld, kUp);
+			handleCollisions();
+		}
 
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 
@@ -1000,15 +1000,9 @@ int main(int argc, char *argv[]) {
 		drawerBottomScreenController();
 		
         //C2D_Flush();
+		
 
         C3D_FrameEnd(0);
-		
-		if(finished){
-			//Código para la ventana de reiniicar el juego y créditos	
-		}
-
-
-        //if (now_time < last_time + FPS) svcSleepThread (last_time + FPS - now_time);
     }
 
     scenesExit();
