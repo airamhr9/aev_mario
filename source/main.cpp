@@ -777,7 +777,6 @@ void makeMarioSmall() {
     mario_pointer->top_collision_margin = 15;
     mario_pointer->sprite_refresh = 3800;
     mario_pointer->small = true;
-	mario_pointer->lifes = 1;
 }
 
 
