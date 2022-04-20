@@ -259,6 +259,10 @@ typedef struct {
     C2D_Sprite sprite;
 } Scoreboard;
 
+typedef struct {
+    C2D_Sprite sprite;
+} Credits;
+
 #define RESET true
 #define GAMETIME false
 

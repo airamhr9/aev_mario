@@ -28,6 +28,7 @@ static Block block;
 static Title title;
 static Scoreboard scoreboard;
 static TimeState timeState;
+static Credits credits;
 
 static C2D_SpriteSheet mario_spriteSheet;
 static C2D_SpriteSheet background_spriteSheet;
@@ -39,6 +40,7 @@ static C2D_SpriteSheet button_spriteSheet;
 static C2D_SpriteSheet coin_spriteSheet;
 static C2D_SpriteSheet title_spriteSheet;
 static C2D_SpriteSheet scoreboard_spriteSheet;
+static C2D_SpriteSheet credits_spriteSheet;
 
 bool finished=false;
 
@@ -53,6 +55,7 @@ Coin *coin_block_pointer = &block.coin;
 Coin *coin_goomba_pointer = &goomba.coin;
 Title *title_pointer = &title;
 Scoreboard *scoreboard_pointer = &scoreboard;
+Credits *credits_pointer = &credits;
 
 u64 start_loop_time = svcGetSystemTick();
 u64 now = svcGetSystemTick();
@@ -83,6 +86,15 @@ bool array_contains(int val, int array[], int* pos, int num_elems) {
 
 	return 0;
 } 
+
+void controllerSprites_credits()
+{
+	C2D_SpriteFromSheet(&credits_pointer->sprite, credits_spriteSheet, 0);
+	C2D_SpriteSetCenter(&credits_pointer->sprite, 0.f, 0.f);
+	C2D_SpriteSetPos(&credits_pointer->sprite, TOAD_INITIAL_POS_X - 3, TOAD_INITIAL_POS_Y - 30);
+	C2D_SpriteSetRotationDegrees(&credits_pointer->sprite, 0); 
+	C2D_DrawSprite(&credits_pointer->sprite);
+}
 
 void controllerSprites_scoreboard()
 {
@@ -401,6 +413,11 @@ void setIdleMario(int kUp) {
 }
 
 void prepare_sprites() {
+	
+	credits_spriteSheet = C2D_SpriteSheetLoad("romfs:/gfx/credits.t3x");
+    if (!credits_spriteSheet) {
+        svcBreak(USERBREAK_PANIC);
+    }
 	scoreboard_spriteSheet = C2D_SpriteSheetLoad("romfs:/gfx/scoreboard.t3x");
     if (!scoreboard_spriteSheet) {
         svcBreak(USERBREAK_PANIC);
@@ -483,6 +500,36 @@ void setDefaultMarioValues() {
     mario_pointer->coins = 0;
 }
 
+void setDefaultGoombaValues() {
+	
+    C2D_SpriteFromSheet(&goomba_pointer->sprite, goomba_spriteSheet, 0);
+    C2D_SpriteSetCenter(&goomba_pointer->sprite, 0.f, 0.f);
+    C2D_SpriteSetPos(&goomba_pointer->sprite, GOOMBA_INITIAL_POS_X, GOOMBA_INITIAL_POS_Y);
+    C2D_SpriteSetRotation(&goomba_pointer->sprite, C3D_Angle(0));
+	
+    goomba_pointer->animation_delay = GOOMBA_ANIMATION_DELAY;
+    goomba_pointer->current_sprite = 0;
+    goomba_pointer->rotation = 0;
+    goomba_pointer->alive = true;
+    goomba_pointer->direction_delay = GOOMBA_DIRECTION_TIME;
+    goomba_pointer->dx = GOOMBA_INITIAL_POS_X;
+    goomba_pointer->dy = GOOMBA_INITIAL_POS_Y;
+    goomba_pointer->speed = GOOMBA_SPEED;
+    goomba_pointer->current_direction = DIRECTION_LEFT;
+
+
+    C2D_SpriteFromSheet(&coin_goomba_pointer->sprite, coin_spriteSheet, 0);
+    C2D_SpriteSetCenter(&coin_goomba_pointer->sprite, 0.f, 0.f);
+    C2D_SpriteSetPos(&coin_goomba_pointer->sprite, GOOMBA_INITIAL_POS_X, GOOMBA_INITIAL_POS_Y);
+    C2D_SpriteSetRotation(&coin_goomba_pointer->sprite, C3D_Angle(0));
+    coin_goomba_pointer->visible = false;
+    coin_goomba_pointer->animation_time = COIN_ANIMATION_TIME;
+    coin_goomba_pointer->dx = GOOMBA_INITIAL_POS_X;
+    coin_goomba_pointer->dy = GOOMBA_INITIAL_POS_Y;
+    coin_goomba_pointer->elapsed_time = 0;
+
+}
+
 void prepare_mario(int posX, int posY) {
     C2D_SpriteFromSheet(&mario_pointer->sprite, mario_spriteSheet, 4);
     C2D_SpriteSetCenter(&mario_pointer->sprite, 0.f, 0.f);
@@ -509,6 +556,13 @@ void prepare_title() {
     C2D_SpriteSetCenter(&button_title_pointer->sprite, 0.f, 0.f);
 	C2D_SpriteSetPos(&button_title_pointer->sprite, TOP_SCREEN_WIDTH - 215, TOP_SCREEN_HEIGHT - 80);
 	C2D_SpriteSetRotationDegrees(&button_title_pointer->sprite, 0); 
+}
+
+void prepare_credits() {
+    C2D_SpriteFromSheet(&credits_pointer->sprite, credits_spriteSheet,0);
+    C2D_SpriteSetCenter(&credits_pointer->sprite, 0.5f, 1.0f);
+    C2D_SpriteSetPos(&credits_pointer->sprite, TOP_SCREEN_WIDTH / 2, TOP_SCREEN_HEIGHT - 100);
+    C2D_SpriteSetRotation(&credits_pointer->sprite, C3D_Angle(0));
 }
 
 void prepare_scoreboard() {
@@ -594,6 +648,10 @@ void draw_title() {
     C2D_DrawSprite(&button_title.sprite);
 }   
 
+void draw_credits() {
+    C2D_DrawSprite(&credits.sprite);
+}   
+
 void draw_mario() {
     if (mario_pointer->alive) {
         C2D_DrawSprite(&mario.sprite);
@@ -641,6 +699,8 @@ void scenesExit() {
     C2D_SpriteSheetFree(block_spriteSheet);
     C2D_SpriteSheetFree(coin_spriteSheet);
     C2D_SpriteSheetFree(title_spriteSheet);
+	C2D_SpriteSheetFree(scoreboard_spriteSheet);
+	C2D_SpriteSheetFree(credits_spriteSheet);
 }
 
 void initGame() {
@@ -651,6 +711,7 @@ void initGame() {
     prepare_toad();
     prepare_game_screen();
 	prepare_scoreboard();
+	prepare_credits();
 }
 
 void dynamic_scoreboard() {
@@ -695,18 +756,6 @@ void drawerTopScreenController() {
     }
 }
 
-void manageKeyPress(u32 kDown) {
-    if ((kDown & KEY_A) && isInDialogPos()){
-        if (toadText_pointer->visible) {
-            toadText_pointer->visible = false;
-			finished=true;
-        } else {
-            toadText_pointer->visible = true;
-            cwavPlay(toadSound, 0, -1);
-        }
-    }
-}
-
 void menuController(u32 kDown) {
     if (kDown & KEY_A) {
         title_pointer->visible = false;
@@ -718,7 +767,28 @@ void restart() {
     block_pointer->current_sprite = BLOCK_UNTOUCHED;
     title_pointer->visible = true;
     setDefaultMarioValues();
+	setDefaultGoombaValues();
 }
+
+void manageKeyPress(u32 kDown) {
+    if ((kDown & KEY_A) && isInDialogPos()){
+        if (toadText_pointer->visible) {
+            toadText_pointer->visible = false;
+			if(mario_pointer->coins == 2){
+				draw_credits();
+				finished = true;
+				}
+        } else {
+            toadText_pointer->visible = true;
+            cwavPlay(toadSound, 0, -1);
+        }
+    }
+	if ((kDown & KEY_A) && finished){
+		finished = false;
+		restart();
+	}
+}
+
 
 void handleMarioDead() {
     float now_dead = svcGetSystemTick();
@@ -905,7 +975,8 @@ int main(int argc, char *argv[]) {
         if (title_pointer->visible) {
             menuController(kDown);
         } else {
-			advanceTimeState();
+			if (!finished)
+				advanceTimeState();
             characterAnimations();
             marioPhysics();
             gameInputController(kDown, kHeld, kUp);
