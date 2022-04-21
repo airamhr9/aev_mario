@@ -26,7 +26,8 @@
 #define SMALL_JUMP 70000000
 #define MARIO_SMALL_Y 190
 #define SPRITE_REFRESH 2800
-#define INVINCIBILITY_TIME 40000
+#define INVINCIBILITY_TIME 13000
+#define DAMAGE_ANIM_DELAY 12000
 enum Mario_Sprites {
 	LEFT_WALK_2,
     LEFT_WALK_3,
@@ -126,6 +127,10 @@ typedef struct {
     float anim_elapsed_time;
     float upwards_dead_anim_delay;
     float dead_elapsed_time;
+    float damage_anim_delay;
+    float damage_anim_elapsed_time;
+    bool damage_anim_direction;
+    bool can_move;
     int max_jump_time;
     int sprite_refresh;
     bool small;

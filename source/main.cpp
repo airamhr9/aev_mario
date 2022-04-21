@@ -245,6 +245,16 @@ void marioPhysics() {
     now = svcGetSystemTick();
     int pos;
 
+    if (mario_pointer->small && mario_pointer->damage_anim_elapsed_time <= mario_pointer->damage_anim_delay) {
+        mario_pointer->damage_anim_elapsed_time += (now - start_loop_time);
+        mario_pointer->current_sprite = MARIODEAD;
+        new_x -= 1;
+    } else if (!mario_pointer->can_move) {
+        mario_pointer->can_move = true;
+        mario_pointer->current_sprite = SMALL_RIGHT_IDLE;
+        new_y = MARIO_SMALL_Y;
+    }
+
     if (mario_pointer->state == MarioState::falling) {
         //printf("MARIO IS FALLING\n");
         new_y += mario_pointer->fall_speed;
@@ -477,6 +487,8 @@ void setDefaultMarioValues() {
     mario_pointer->dead_elapsed_time = 0;
     mario_pointer->current_sprite = RIGHT_WALK_1;
     mario_pointer->upwards_dead_anim_delay = MARIO_UPWARDS_DEAD_DELAY;
+    mario_pointer->damage_anim_delay = DAMAGE_ANIM_DELAY;
+    mario_pointer->damage_anim_elapsed_time = 0;
     mario_pointer->sprite_refresh = SPRITE_REFRESH;
     mario_pointer->max_jump_time = BIG_JUMP;
     mario_pointer->can_jump = true;
@@ -494,6 +506,7 @@ void setDefaultMarioValues() {
     mario_pointer->invincibility_elapsed_ms = 0;
     mario_pointer->lifes = 2;
     mario_pointer->coins = 0;
+    mario_pointer->can_move = true;
 }
 
 void setDefaultGoombaValues() {
@@ -567,7 +580,6 @@ void prepare_scoreboard() {
     C2D_SpriteSetPos(&scoreboard_pointer->sprite, BOTTOM_SCREEN_WIDTH / 2, BOTTOM_SCREEN_HEIGHT - 100);
     C2D_SpriteSetRotation(&scoreboard_pointer->sprite, C3D_Angle(0));
 }
-
 
 void prepare_block() {
     C2D_SpriteFromSheet(&block_pointer->sprite, block_spriteSheet, 0);
@@ -841,13 +853,15 @@ void makeMarioSmall() {
     mario_pointer->dy = MARIO_SMALL_Y;
     mario_pointer->left_jump_anim = smallJumpLeftAnim;
     mario_pointer->right_jump_anim = smallJumpRightAnim;
-    mario_pointer->right_collision_margin = 15;
-    mario_pointer->bottom_collision_margin = 30;
-    mario_pointer->left_collision_margin = 10;
+    mario_pointer->right_collision_margin = 20;
+    mario_pointer->bottom_collision_margin = 20;
+    mario_pointer->left_collision_margin = 17;
     mario_pointer->top_collision_margin = 15;
     mario_pointer->sprite_refresh = 3800;
     mario_pointer->small = true;
 	mario_pointer->lifes = 1;
+    mario_pointer->damage_anim_direction = !goomba_pointer->current_direction;
+    mario_pointer->can_move = false;
 }
 
 
@@ -980,7 +994,9 @@ int main(int argc, char *argv[]) {
             advanceTimeState();
 			characterAnimations();
 			marioPhysics();
-			gameInputController(kDown, kHeld, kUp);
+            if (mario_pointer->can_move) {
+			    gameInputController(kDown, kHeld, kUp);
+            }
 			handleCollisions();
 		}
 
