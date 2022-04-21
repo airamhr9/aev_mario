@@ -977,6 +977,7 @@ int main(int argc, char *argv[]) {
 		} else if (title_pointer->visible) {
 			menuController(kDown);
 		} else {
+            advanceTimeState();
 			characterAnimations();
 			marioPhysics();
 			gameInputController(kDown, kHeld, kUp);
