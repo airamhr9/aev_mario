@@ -248,7 +248,11 @@ void marioPhysics() {
     if (mario_pointer->small && mario_pointer->damage_anim_elapsed_time <= mario_pointer->damage_anim_delay) {
         mario_pointer->damage_anim_elapsed_time += (now - start_loop_time);
         mario_pointer->current_sprite = MARIODEAD;
-        new_x -= 1;
+        if (mario_pointer->damage_anim_direction == DIRECTION_LEFT) {
+            new_x -= 3;
+        } else {
+            new_x += 3;
+        }
     } else if (!mario_pointer->can_move) {
         mario_pointer->can_move = true;
         mario_pointer->current_sprite = SMALL_RIGHT_IDLE;
@@ -860,7 +864,11 @@ void makeMarioSmall() {
     mario_pointer->sprite_refresh = 3800;
     mario_pointer->small = true;
 	mario_pointer->lifes = 1;
-    mario_pointer->damage_anim_direction = !goomba_pointer->current_direction;
+    if (goomba_pointer->dx <= mario_pointer->dx) {
+        mario_pointer->damage_anim_direction = DIRECTION_RIGHT;
+    } else {
+        mario_pointer->damage_anim_direction = DIRECTION_LEFT;
+    }
     mario_pointer->can_move = false;
 }
 
