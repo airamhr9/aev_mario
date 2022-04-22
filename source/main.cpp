@@ -776,6 +776,11 @@ void menuController(u32 kDown) {
     }
 }
 
+void decreaseLife(int lifes) {
+    setDefaultMarioValues();
+    mario_pointer->lifes = lifes;
+}
+
 void restart() {
     block_pointer->current_sprite = BLOCK_UNTOUCHED;
 	credits_pointer->visible = false;
@@ -816,7 +821,13 @@ void handleMarioDead() {
         mario_pointer->dy += 3;
         if (mario_pointer->dy > TOP_SCREEN_HEIGHT) {
             mario_pointer->alive = false;
-            restart();
+            mario_pointer->lifes--;
+            
+            if (mario_pointer->lifes > 0) {
+                decreaseLife(mario_pointer->lifes);
+            } else {
+                restart();
+            }
         }
     }
 
@@ -863,7 +874,6 @@ void makeMarioSmall() {
     mario_pointer->top_collision_margin = 15;
     mario_pointer->sprite_refresh = 3800;
     mario_pointer->small = true;
-	mario_pointer->lifes = 1;
     if (goomba_pointer->dx <= mario_pointer->dx) {
         mario_pointer->damage_anim_direction = DIRECTION_RIGHT;
     } else {
