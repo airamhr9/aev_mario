@@ -28,6 +28,7 @@ static Title title;
 static Scoreboard scoreboard;
 static TimeState timeState;
 static Credits credits;
+static HudSprites hudSprites;
 
 static C2D_SpriteSheet mario_spriteSheet;
 static C2D_SpriteSheet background_spriteSheet;
@@ -40,6 +41,7 @@ static C2D_SpriteSheet coin_spriteSheet;
 static C2D_SpriteSheet title_spriteSheet;
 static C2D_SpriteSheet scoreboard_spriteSheet;
 static C2D_SpriteSheet credits_spriteSheet;
+static C2D_SpriteSheet hud_spriteSheet;
 
 Mario *mario_pointer = &mario;
 Toad *toad_pointer = &toad;
@@ -53,6 +55,8 @@ Coin *coin_goomba_pointer = &goomba.coin;
 Title *title_pointer = &title;
 Scoreboard *scoreboard_pointer = &scoreboard;
 Credits *credits_pointer = &credits;
+HudSprites *hud_pointer = &hudSprites;
+
 
 u64 start_loop_time = svcGetSystemTick();
 u64 now = svcGetSystemTick();
@@ -94,6 +98,20 @@ void controllerSprites_credits()
 	C2D_SpriteSetPos(&credits_pointer->sprite, TOAD_INITIAL_POS_X - 3, TOAD_INITIAL_POS_Y - 30);
 	C2D_SpriteSetRotationDegrees(&credits_pointer->sprite, 0); 
 	C2D_DrawSprite(&credits_pointer->sprite);
+}
+
+void prepareSprites_hud()
+{
+	C2D_SpriteFromSheet(&hud_pointer->mushroomSprite, hud_spriteSheet, HudSpritesEnum::MUSHROOM);
+	C2D_SpriteSetCenter(&hud_pointer->mushroomSprite, 0.f, 0.f);
+	C2D_SpriteSetPos(&hud_pointer->mushroomSprite, 30, 38);
+	C2D_SpriteSetRotationDegrees(&hud_pointer->mushroomSprite, 0); 
+
+
+	C2D_SpriteFromSheet(&hud_pointer->coinSprite, hud_spriteSheet, HudSpritesEnum::COIN);
+	C2D_SpriteSetCenter(&hud_pointer->coinSprite, 0.f, 0.f);
+	C2D_SpriteSetPos(&hud_pointer->coinSprite, 30, 18);
+	C2D_SpriteSetRotationDegrees(&hud_pointer->coinSprite, 0); 
 }
 
 void controllerSprites_scoreboard()
@@ -480,6 +498,13 @@ void prepare_sprites() {
     if (!background_spriteSheet) {
         svcBreak(USERBREAK_PANIC);
     }
+
+    //Hud
+    hud_spriteSheet = C2D_SpriteSheetLoad("romfs:/gfx/hud_sprites.t3x");
+    if (!hud_spriteSheet) {
+        svcBreak(USERBREAK_PANIC);
+    }
+
 }
 
 void setDefaultMarioValues() {
@@ -692,6 +717,8 @@ void draw_characters() {
 
 void draw_scoreboard() {
     C2D_DrawSprite(&scoreboard.sprite);
+    C2D_DrawSprite(&hudSprites.mushroomSprite);
+    C2D_DrawSprite(&hudSprites.coinSprite);
 }
 
 void draw_scenery() {
@@ -729,6 +756,7 @@ void initGame() {
     prepare_game_screen();
 	prepare_scoreboard();
 	prepare_credits();
+    prepareSprites_hud();
 }
 
 void dynamic_scoreboard() {
@@ -751,7 +779,7 @@ void dynamic_scoreboard() {
 	
 	C2D_DrawText(&dynText_coins,  C2D_AlignLeft | C2D_WithColor, 50.0f, 20.0f, 0.5f, 0.5f, 0.5f, C2D_Color32f(1, 1, 1, 1));
 	C2D_DrawText(&dynText_lifes,  C2D_AlignLeft | C2D_WithColor, 50.0f, 40.0f, 0.5f, 0.5f, 0.5f, C2D_Color32f(1, 1, 1, 1));
-	C2D_DrawText(&dynText_time, C2D_AlignLeft | C2D_WithColor, 50.0f, 60.0f, 0.5f, 0.5f, 0.5f, C2D_Color32f(1, 1, 1, 1));
+	C2D_DrawText(&dynText_time, C2D_AlignLeft | C2D_WithColor, 35.0f, 70.0f, 0.5f, 0.5f, 0.5f, C2D_Color32f(1, 1, 1, 1));
 
 	
 }

@@ -276,3 +276,13 @@ typedef struct {
     u64 initial_time;
     u64 current_seconds;
 } TimeState;
+
+enum HudSpritesEnum {
+    MUSHROOM, 
+    COIN
+};
+
+typedef struct {
+    C2D_Sprite mushroomSprite;
+    C2D_Sprite coinSprite;
+} HudSprites;
