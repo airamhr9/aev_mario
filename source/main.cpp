@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include <ncsnd.h>
 #include <time.h>
-#include "stb/stretchy_buffer.h"
 
 /* C2D_Text Declaration Variables */
 C2D_TextBuf g_dynamicBuf; // Buffer Declaratation
@@ -60,6 +59,9 @@ u64 now = svcGetSystemTick();
 
 static CWAV* ost = (CWAV*) malloc(sizeof(CWAV));
 static CWAV* toadSound = (CWAV*) malloc(sizeof(CWAV));
+static CWAV* coinSound = (CWAV*) malloc(sizeof(CWAV));
+static CWAV* jumpSound = (CWAV*) malloc(sizeof(CWAV));
+static CWAV* goombaSound = (CWAV*) malloc(sizeof(CWAV));
 
 void initTimeState() {
     timeState.initial_time = svcGetSystemTick();
@@ -215,6 +217,7 @@ void characterAnimations() {
 
     if (coin_block_pointer->visible) {
         coin_block_pointer->elapsed_time += (chars_now - start_loop_time);
+        cwavPlay(coinSound, 0, -1);
         if (coin_block_pointer->elapsed_time <= coin_block_pointer->animation_time) {
             coin_block_pointer->dy -= 3;
         } else {
@@ -225,6 +228,7 @@ void characterAnimations() {
 
     if (coin_goomba_pointer->visible) {
         coin_goomba_pointer->elapsed_time += (chars_now - start_loop_time);
+            cwavPlay(coinSound, 0, -1);
         if (coin_goomba_pointer->elapsed_time <= coin_goomba_pointer->animation_time) {
             coin_goomba_pointer->dy -= 3;
         } else {
@@ -309,6 +313,7 @@ void moveMario(u32 kHeld)
                     mario_pointer->jump_start = svcGetSystemTick();
                     mario_pointer->state = MarioState::jumping;
                     new_y -= mario_pointer->jump_speed;
+                    cwavPlay(jumpSound, 0, -1);
 
                     if (array_contains(mario_pointer->current_sprite, mario_pointer->right_walk_anim, &pos, mario_pointer->anim_num_sprites)) {
                         //printf("CONTAINS %d in POS %d JUMP RIGHT\n", mario_pointer->current_sprite, pos);
@@ -889,6 +894,7 @@ void handleGoombaCollision() {
     if (goomba_pointer->alive && isInCollissionWithGoomba() && goomba_pointer->dy == GOOMBA_INITIAL_POS_Y) {
         if(mario_pointer->state != MarioState::walking && mario_pointer->state != MarioState::dead){
             //printf("Mario ha matado a Goomba!\n");
+            cwavPlay(goombaSound, 0, -1);
             mario_pointer->dy = mario_pointer->dy - 5;
             coin_goomba_pointer->visible = true;
             coin_goomba_pointer->dx = goomba_pointer->dx;
@@ -958,12 +964,20 @@ void prepareSound(char* soundPath, CWAV* cwav) {
  ***************************/
 void prepareSounds() {
     prepareSound("romfs:/ostd.cwav", ost);
-    ost->volume = .5;
+    ost->volume = .4;
     cwavPlay(ost, 0, -1);
 
     prepareSound("romfs:/toad.cwav", toadSound);
     toadSound->volume = 1;
-    //cwavPlay(ost, 0, -1);
+
+    prepareSound("romfs:/goomba.cwav", goombaSound);
+    goombaSound->volume = 1;
+
+    prepareSound("romfs:/jump.cwav", jumpSound);
+    jumpSound->volume = .1;
+
+    prepareSound("romfs:/coin.cwav", coinSound);
+    coinSound->volume = .1;
 }
 
 int main(int argc, char *argv[]) {
