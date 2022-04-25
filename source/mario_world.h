@@ -28,6 +28,8 @@
 #define SPRITE_REFRESH 2800
 #define INVINCIBILITY_TIME 12000
 #define DAMAGE_ANIM_DELAY 12000
+#define MARIO_CROUCH_Y 182;
+#define MARIO_SMALL_CROUCH_Y 194;
 enum Mario_Sprites {
 	LEFT_WALK_2,
     LEFT_WALK_3,
@@ -67,7 +69,9 @@ enum Mario_Sprites {
     SMALL_LEFT_FALL,
     SMALL_LEFT_IDLE,
     SMALL_LEFT_JUMP,
-    SMALL_LEFT_WALK
+    SMALL_LEFT_WALK,
+    SMALL_CROUCH_LEFT,
+    SMALL_CROUCH_RIGHT
 };
 
 int jumpRightAnim[] =  {
